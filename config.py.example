@@ -278,3 +278,24 @@ LogFile = {
 # - 210000 is how many blocks until the next halving
 # This algorithm can be modified slightly for altcoins which calculate a block reward from only the height.
 SubsidyAlgo = lambda height: 5000000000 >> (height // 210000)
+
+### Settings related to Rootstock merge mining
+
+RootstockSources = (
+	{
+		'name': 'primary',
+		'uri': 'http://user:pass@rootstock:4444',
+		'priority': 0,
+		'weight': 1,
+	},
+	{
+		'name': 'backup',
+		'uri': 'http://user:pass@backup:4444',
+		'priority': 1,
+		'weight': 1,
+	},
+)
+
+RootstockPollPeriod = 0
+
+RootstockNotifyPolicy = 0
