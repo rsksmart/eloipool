@@ -360,6 +360,7 @@ RBPs = []
 from bitcoin.varlen import varlenEncode, varlenDecode
 import bitcoin.txn
 from merklemaker import assembleBlock
+from rootstock import rootstockSubmissionThread
 
 if not hasattr(config, 'BlockSubmissions'):
 	config.BlockSubmissions = None
@@ -561,10 +562,22 @@ def checkShare(share):
 	cbtxn = txlist[0]
 	cbtxn.setCoinbase(coinbase or workCoinbase)
 	cbtxn.assemble()
-	
-	if blkhashn <= networkTarget:
-		logfunc("Submitting upstream")
-		RBDs.append( deepcopy( (data, txlist, share.get('blkdata', None), workMerkleTree, share, wld) ) )
+
+	rootstockBlockHash = None
+	rootstockTarget = None
+
+	if hasattr(workMerkleTree, "rootstockBlockInfo") and workMerkleTree.rootstockBlockInfo is not None:
+		rootstockBlockHash = workMerkleTree.rootstockBlockInfo[0]
+		rootstockTarget = workMerkleTree.rootstockBlockInfo[1]
+
+	submitRootstock = rootstockTarget is not None and blkhashn <= rootstockTarget
+	submitBitcoin = blkhashn <= networkTarget
+
+	if submitBitcoin or submitRootstock:
+		if submitBitcoin:
+			logfunc("Submitting upstream")
+			RBDs.append( deepcopy( (data, txlist, share.get('blkdata', None), workMerkleTree, share, wld) ) )
+
 		if not moden:
 			payload = assembleBlock(data, txlist)
 		else:
@@ -573,6 +586,13 @@ def checkShare(share):
 				payload += share['blkdata']
 			else:
 				payload += assembleBlock(data, txlist)[80:]
+
+		if submitRootstock:
+			threading.Thread(target=rootstockSubmissionThread, args=(payload,)).start()
+
+		if not submitBitcoin:
+			return
+
 		logfunc('Real block payload: %s' % (b2a_hex(payload).decode('utf8'),))
 		RBPs.append(payload)
 		threading.Thread(target=blockSubmissionThread, args=(payload, blkhash, share)).start()
@@ -845,10 +865,9 @@ def restoreState(SAVE_STATE_FILENAME):
 		logger.info('Total downtime: %g seconds' % (time() - t,))
 
 
-from rootstock import Rootstock
-rootstock = Rootstock()
+from rootstock import rootstock
 rootstock.MM = MM
-MM.rootstock = rootstock
+MM.Rootstock = rootstock
 rootstock.RootstockSources = getattr(config, "RootstockSources", ())
 rootstock.RootstockPollPeriod = getattr(config, "RootstockPollPeriod", 0)
 rootstock.RootstockNotifyPolicy = getattr(config, "RootstockNotifyPolicy", 0)

@@ -5,7 +5,9 @@ import logging
 import threading
 import traceback
 import base64
+from binascii import b2a_hex
 from time import sleep
+from util import bdiff2target
 
 class Rootstock(threading.Thread):
 	def __init__(self, *a, **k):
@@ -86,4 +88,32 @@ class Rootstock(threading.Thread):
 	def _updateBlockHash(self, blockhash, notify, minerfees, difficulty):
 		if self.blockhash != blockhash:
 			self.blockhash, self.notify, self.minerfees, self.difficulty = blockhash, notify, minerfees, difficulty
-			#FIXME notify to generate a new block
+		#FIXME notify to generate a new block
+
+	def getBlockInfo(self):
+		blockhash, difficulty = (self.blockhash, self.difficulty)
+		return blockhash, bdiff2target(difficulty)
+
+def rootstockSubmissionThread(payload):
+	servers = list(a for b in rootstockSubmissionThread.rootstock.RootstockSources for a in b)
+
+	payload = b2a_hex(payload).decode('ascii')
+	tries = 0
+	while len(servers):
+		tries += 1
+		RS = servers.pop(0)
+		UpstreamRskdJSONRPC = RS['access']
+		try:
+			UpstreamRskdJSONRPC.eth_processSPVProof(payload)
+		except BaseException as gbterr:
+			gbterr_fmt = traceback.format_exc()
+			if tries > len(servers):
+				msg = 'Upstream \'{0}\' block submission failed: {1}'.format(RS['name'], gbterr_fmt)
+				rootstockSubmissionThread.logger.error(msg)
+				return
+			servers.append(RS)
+			continue
+rootstockSubmissionThread.logger = logging.getLogger('rootstockSubmission')
+
+rootstock = Rootstock()
+rootstockSubmissionThread.rootstock = rootstock

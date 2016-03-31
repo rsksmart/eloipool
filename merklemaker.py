@@ -163,14 +163,14 @@ class merkleMaker(threading.Thread):
 	
 	def createClearMerkleTree(self, height):
 		subsidy = self.SubsidyAlgo(height)
-		rsk_blockhash = None
-		if hasattr(self, 'Rootstock') and self.Rootstock:
-			rsk_blockhash = self.Rootstock.blockhash
-		cbtxn = self.makeCoinbaseTxn(subsidy, False, rsk_blockhash=rsk_blockhash)
+		blockInfo = (None, None)
+		if hasattr(self, 'Rootstock') and self.Rootstock is not None:
+			blockInfo = self.Rootstock.getBlockInfo()
+		cbtxn = self.makeCoinbaseTxn(subsidy, False, rsk_blockhash = blockInfo[0])
 		cbtxn.assemble()
 		merkleTree = MerkleTree([cbtxn])
-		if rsk_blockhash is not None:
-			merkleTree.rsk_blockhash = rsk_blockhash
+		if blockInfo[0] is not None:
+			merkleTree.rootstockBlockInfo = blockInfo
 		return merkleTree
 	
 	def updateBlock(self, newBlock, height = None, bits = None, _HBH = None):
@@ -386,11 +386,11 @@ class merkleMaker(threading.Thread):
 		
 		self._makeBlockSafe(MP, txnlist, txninfo)
 
-		rsk_blockhash = None
-		if hasattr(self, 'Rootstock') and self.Rootstock:
-			rsk_blockhash = self.Rootstock.blockhash
+		blockInfo = (None, None)
+		if hasattr(self, 'Rootstock') and self.Rootstock is not None:
+			blockInfo = self.Rootstock.getBlockInfo()
 
-		cbtxn = self.makeCoinbaseTxn(MP['coinbasevalue'], prevBlockHex = MP['previousblockhash'], rsk_blockhash = rsk_blockhash)
+		cbtxn = self.makeCoinbaseTxn(MP['coinbasevalue'], prevBlockHex = MP['previousblockhash'], rsk_blockhash = blockInfo[0])
 		cbtxn.setCoinbase(b'\0\0')
 		cbtxn.assemble()
 		txnlist.insert(0, cbtxn.data)
@@ -405,8 +405,8 @@ class merkleMaker(threading.Thread):
 		newMerkleTree.MP = MP
 		newMerkleTree.oMP = oMP
 
-		if rsk_blockhash is not None:
-			newMerkleTree.rsk_blockhash = rsk_blockhash
+		if blockInfo[0] is not None:
+			newMerkleTree.rootstockBlockInfo = blockInfo
 		return newMerkleTree
 	
 	def _CheckTemplate(self, newMerkleTree, TS):
