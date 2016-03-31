@@ -4,6 +4,7 @@ import jsonrpc
 import logging
 import threading
 import traceback
+import base64
 from time import sleep
 
 class Rootstock(threading.Thread):
@@ -11,10 +12,15 @@ class Rootstock(threading.Thread):
 		super().__init__(*a, **k)
 		self.daemon = True
 		self.logger = logging.getLogger('rootstock')
+		self.blockhash = None
+		self.minerfees = None
+		self.difficulty = None
+		self.notify = None
 
 	def _prepare(self):
 		self.RootstockSources = list(getattr(self, 'RootstockSources', ()))
 		self.RootstockPollPeriod = getattr(self, 'RootstockPollPeriod', 0)
+		self.RootstockNotifyPolicy = getattr(self, 'RootstockNotifyPolicy', 0)
 		if not self.RootstockPollPeriod:
 			self.RootstockPollPeriod = self.MM.IdleSleepTime
 		LeveledRS = {}
@@ -47,22 +53,37 @@ class Rootstock(threading.Thread):
 				self.logger.critical(traceback.format_exc())
 	
 	def updateRootstock(self):
+		work = self._callGetWork()
+		if work is not None:
+			notify = work['notifyFlag']
+			blockhash = base64.b64decode(work['blockHashForMergedMining'])
+			minerfees = float(work['feesPaidToMiner'])
+			difficulty = float(work['difficultyBI'])
+			self._updateBlockHash(blockhash, notify, minerfees, difficulty)
+		sleep(self.RootstockPollPeriod)
+
+	def _callGetWork(self):
 		for RSPriList in self.RootstockSources:
 			for i in range(len(RSPriList)):
 				RS = RSPriList.pop(0)
 				RSPriList.append(RS)
 				try:
-					r = self._callGetWork(RS)
+					r = self._callGetWorkFrom(RS)
 					if r is None:
 						continue
-					self.logger.debug('Updating work \'{0}\''.format(r))
+					return r
 				except:
 					if RSPriList == self.RootstockSources[-1] and i == len(RSPriList) - 1:
 						raise
 					else:
 						self.logger.error(traceback.format_exc())
-		sleep(self.RootstockPollPeriod)
+		return None
 
-	def _callGetWork(self, RS):
+	def _callGetWorkFrom(self, RS):
 		access = RS['access']
 		return access.eth_getWork()
+
+	def _updateBlockHash(self, blockhash, notify, minerfees, difficulty):
+		if self.blockhash != blockhash:
+			self.blockhash, self.notify, self.minerfees, self.difficulty = blockhash, notify, minerfees, difficulty
+			#FIXME notify to generate a new block

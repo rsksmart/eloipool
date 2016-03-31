@@ -100,7 +100,7 @@ from struct import pack
 import subprocess
 from time import time
 
-def makeCoinbaseTxn(coinbaseValue, useCoinbaser = True, prevBlockHex = None):
+def makeCoinbaseTxn(coinbaseValue, useCoinbaser = True, prevBlockHex = None, rsk_blockhash = None):
 	txn = Txn.new()
 	
 	if useCoinbaser and hasattr(config, 'CoinbaserCmd') and config.CoinbaserCmd:
@@ -128,9 +128,8 @@ def makeCoinbaseTxn(coinbaseValue, useCoinbaser = True, prevBlockHex = None):
 	pkScript = BitcoinScript.toAddress(config.TrackerAddr)
 	txn.addOutput(coinbaseValue, pkScript)
 
-	# FIXME Add script to return rootstock tag
-	#if hasattr(config, 'RootstockSources') and config.RootstockSources:
-	#	txn.addOutput(0, b'\x6A\x52\x4F\x4F\x54\x53\x54\x4F\x43\x4B\x3A')
+	if rsk_blockhash is not None:
+		txn.addOutput(0, b'\x6A\x52\x4F\x4F\x54\x53\x54\x4F\x43\x4B\x3A' + rsk_blockhash)
 	
 	# TODO
 	# TODO: red flag on dupe coinbase
@@ -847,11 +846,12 @@ def restoreState(SAVE_STATE_FILENAME):
 
 
 from rootstock import Rootstock
-rskd = Rootstock()
-rskd.MM = MM
-rskd.RootstockSources = getattr(config, "RootstockSources", ())
-rskd.RootstockPollPeriod = getattr(config, "RootstockPollPeriod", 0)
-rskd.RootstockNotifyPolicy = getattr(config, "RootstockNotifyPolicy", 0)
+rootstock = Rootstock()
+rootstock.MM = MM
+MM.rootstock = rootstock
+rootstock.RootstockSources = getattr(config, "RootstockSources", ())
+rootstock.RootstockPollPeriod = getattr(config, "RootstockPollPeriod", 0)
+rootstock.RootstockNotifyPolicy = getattr(config, "RootstockNotifyPolicy", 0)
 
 from jsonrpcserver import JSONRPCListener, JSONRPCServer
 import interactivemode
@@ -975,7 +975,7 @@ if __name__ == "__main__":
 	
 	MM.start()
 
-	rskd.start()
+	rootstock.start()
 	
 	restoreState(config.SaveStateFilename)
 	

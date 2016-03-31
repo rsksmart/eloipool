@@ -163,9 +163,15 @@ class merkleMaker(threading.Thread):
 	
 	def createClearMerkleTree(self, height):
 		subsidy = self.SubsidyAlgo(height)
-		cbtxn = self.makeCoinbaseTxn(subsidy, False)
+		rsk_blockhash = None
+		if hasattr(self, 'Rootstock') and self.Rootstock:
+			rsk_blockhash = self.Rootstock.blockhash
+		cbtxn = self.makeCoinbaseTxn(subsidy, False, rsk_blockhash=rsk_blockhash)
 		cbtxn.assemble()
-		return MerkleTree([cbtxn])
+		merkleTree = MerkleTree([cbtxn])
+		if rsk_blockhash is not None:
+			merkleTree.rsk_blockhash = rsk_blockhash
+		return merkleTree
 	
 	def updateBlock(self, newBlock, height = None, bits = None, _HBH = None):
 		if newBlock == self.currentBlock[0]:
@@ -379,8 +385,12 @@ class merkleMaker(threading.Thread):
 		txnlist = [a for a in map(bytes.fromhex, txnlist)]
 		
 		self._makeBlockSafe(MP, txnlist, txninfo)
-		
-		cbtxn = self.makeCoinbaseTxn(MP['coinbasevalue'], prevBlockHex = MP['previousblockhash'])
+
+		rsk_blockhash = None
+		if hasattr(self, 'Rootstock') and self.Rootstock:
+			rsk_blockhash = self.Rootstock.blockhash
+
+		cbtxn = self.makeCoinbaseTxn(MP['coinbasevalue'], prevBlockHex = MP['previousblockhash'], rsk_blockhash = rsk_blockhash)
 		cbtxn.setCoinbase(b'\0\0')
 		cbtxn.assemble()
 		txnlist.insert(0, cbtxn.data)
@@ -394,7 +404,9 @@ class merkleMaker(threading.Thread):
 		newMerkleTree.POTInfo = MP.get('POTInfo')
 		newMerkleTree.MP = MP
 		newMerkleTree.oMP = oMP
-		
+
+		if rsk_blockhash is not None:
+			newMerkleTree.rsk_blockhash = rsk_blockhash
 		return newMerkleTree
 	
 	def _CheckTemplate(self, newMerkleTree, TS):
@@ -800,7 +812,7 @@ def _test():
 	txninfo[2]['fee'] = 0
 	assert MBS(1) == (MP, txnlist, txninfo)
 	# _ProcessGBT tests
-	def makeCoinbaseTxn(coinbaseValue, useCoinbaser = True, prevBlockHex = None):
+	def makeCoinbaseTxn(coinbaseValue, useCoinbaser = True, prevBlockHex = None, rsk_blockhash = None):
 		txn = Txn.new()
 		txn.addOutput(coinbaseValue, b'')
 		return txn
