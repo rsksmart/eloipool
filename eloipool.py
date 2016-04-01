@@ -868,6 +868,8 @@ def restoreState(SAVE_STATE_FILENAME):
 from rootstock import rootstock
 rootstock.MM = MM
 MM.Rootstock = rootstock
+rootstock.onBlockUpdate = updateBlocks
+rootstock.onBlockChange = blockChanged
 rootstock.RootstockSources = getattr(config, "RootstockSources", ())
 rootstock.RootstockPollPeriod = getattr(config, "RootstockPollPeriod", 0)
 rootstock.RootstockNotifyPolicy = getattr(config, "RootstockNotifyPolicy", 0)

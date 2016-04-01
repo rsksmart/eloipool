@@ -13,11 +13,12 @@ class Rootstock(threading.Thread):
 	def __init__(self, *a, **k):
 		super().__init__(*a, **k)
 		self.daemon = True
-		self.logger = logging.getLogger('rootstock')
+		self.logger = logging.getLogger('Rootstock')
 		self.blockhash = None
 		self.minerfees = None
 		self.difficulty = None
 		self.notify = None
+		self.target = None
 
 	def _prepare(self):
 		self.RootstockSources = list(getattr(self, 'RootstockSources', ()))
@@ -87,12 +88,18 @@ class Rootstock(threading.Thread):
 
 	def _updateBlockHash(self, blockhash, notify, minerfees, difficulty):
 		if self.blockhash != blockhash:
-			self.blockhash, self.notify, self.minerfees, self.difficulty = blockhash, notify, minerfees, difficulty
-		#FIXME notify to generate a new block
+			target = bdiff2target(difficulty)
+			self.blockhash, self.notify, self.minerfees, self.difficulty, self.target = blockhash, notify, minerfees, difficulty, target
+			self.logger.info('New block hash {0} {1:X}'.format(self.blockhash, target))
+			if (self.RootstockNotifyPolicy == 1 and notify) or (self.RootstockNotifyPolicy == 2):
+				self.logger.info('Update miners work')
+				self.onBlockChange()
 
 	def getBlockInfo(self):
-		blockhash, difficulty = (self.blockhash, self.difficulty)
-		return blockhash, bdiff2target(difficulty)
+		blockhash, difficulty, target = self.blockhash, self.difficulty, self.target
+		if blockhash is None:
+			return None, None
+		return blockhash, target
 
 def rootstockSubmissionThread(payload):
 	servers = list(a for b in rootstockSubmissionThread.rootstock.RootstockSources for a in b)
@@ -102,7 +109,9 @@ def rootstockSubmissionThread(payload):
 	while len(servers):
 		tries += 1
 		RS = servers.pop(0)
-		UpstreamRskdJSONRPC = RS['access']
+		#Don't reuse the same conection object that getWork since processSPVProff can take some time to complete
+		#UpstreamRskdJSONRPC = RS['access']
+		UpstreamRskdJSONRPC = jsonrpc.ServiceProxy(RS['uri'])
 		try:
 			UpstreamRskdJSONRPC.eth_processSPVProof(payload)
 		except BaseException as gbterr:
