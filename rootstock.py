@@ -16,7 +16,6 @@ class Rootstock(threading.Thread):
 		self.logger = logging.getLogger('Rootstock')
 		self.blockhash = None
 		self.minerfees = None
-		self.difficulty = None
 		self.notify = None
 		self.target = None
 
@@ -61,8 +60,8 @@ class Rootstock(threading.Thread):
 			notify = work['notifyFlag']
 			blockhash = base64.b64decode(work['blockHashForMergedMining'])
 			minerfees = float(work['feesPaidToMiner'])
-			difficulty = float(work['difficultyBI'])
-			self._updateBlockHash(blockhash, notify, minerfees, difficulty)
+			target = int(work['target'])
+			self._updateBlockHash(blockhash, notify, minerfees, target)
 		sleep(self.RootstockPollPeriod)
 
 	def _callGetWork(self):
@@ -86,17 +85,16 @@ class Rootstock(threading.Thread):
 		access = RS['access']
 		return access.eth_getWork()
 
-	def _updateBlockHash(self, blockhash, notify, minerfees, difficulty):
+	def _updateBlockHash(self, blockhash, notify, minerfees, target):
 		if self.blockhash != blockhash:
-			target = bdiff2target(difficulty)
-			self.blockhash, self.notify, self.minerfees, self.difficulty, self.target = blockhash, notify, minerfees, difficulty, target
+			self.blockhash, self.notify, self.minerfees, self.target = blockhash, notify, minerfees, target
 			self.logger.info('New block hash {0} {1:X}'.format(self.blockhash, target))
 			if (self.RootstockNotifyPolicy == 1 and notify) or (self.RootstockNotifyPolicy == 2):
 				self.logger.info('Update miners work')
 				self.onBlockChange()
 
 	def getBlockInfo(self):
-		blockhash, difficulty, target = self.blockhash, self.difficulty, self.target
+		blockhash, target = self.blockhash, self.target
 		if blockhash is None:
 			return None, None
 		return blockhash, target
