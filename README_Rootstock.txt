@@ -62,7 +62,7 @@ which is difficult 1.0.
 * CoinbaserCmd 
 
 Command called before sending a solved block to bitcoind. Used to split the block rewards.
-Can be commented out, or asigned a value of None.
+Assign a value of None.
 
 CoinbaserCmd = None
 
@@ -74,7 +74,7 @@ The uri field is the address of the rpc interface of bitcoind.
 TemplateSources = (
 	{
 		'name': 'primary',
-		'uri': 'http://admin:admin@192.168.0.118:22591',
+		'uri': 'http://admin:admin@127.0.0.1:22591',
 		'priority': 0,
 		'weight': 1,
 	},
@@ -82,21 +82,21 @@ TemplateSources = (
 
 * TemplateChecks
 
-Can be commented out, or asigned a value of None.
+Assign a value of None.
 
 TemplateChecks = None
 
 * BlockSubmissions
 
-Can be commented out, or asigned a value of None.
+Assign a value of None.
 
 BlockSubmissions = None
 
 * UpstreamBitcoindNode
 
-Point to bitcoind
+Point to p2p port bitcoind, or None
 
-UpstreamBitcoindNode = ('127.0.0.1', 21591)
+UpstreamBitcoindNode = None
 
 * StratumAddresses
 
@@ -109,7 +109,7 @@ StratumAddresses = (
 
 * ShareLogging
 
-Remove all logers an only left the log to a file
+Keep the logfile logger, remove all others 
 
 ShareLogging = (
 	{
