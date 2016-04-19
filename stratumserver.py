@@ -71,7 +71,9 @@ class StratumHandler(networkserver.SocketHandler):
 		
 		if not inbuf:
 			return
-		
+
+		self.logger.info("ROOTSTOCK: parse_client_msg: {} {}".format(id(self), inbuf))
+
 		try:
 			rpc = json.loads(inbuf)
 		except ValueError:
@@ -152,7 +154,9 @@ class StratumHandler(networkserver.SocketHandler):
 				],
 			})
 			self.lastBDiff = bdiff
+		self.logger.info("ROOTSTOCK: send_client_send: {}, {:X}, {}".format(id(self), id(bdiff), self.server.JobBytes.decode('utf-8')))
 		self.push(self.server.JobBytes)
+		self.logger.info("ROOTSTOCK: send_client_complete: {}, {:X}".format(id(self), id(bdiff)))
 		if len(self.JobTargets) > 4:
 			self.JobTargets.popitem(False)
 		self.JobTargets[self.server.JobId] = target
@@ -273,7 +277,7 @@ class StratumServer(networkserver.AsyncSocketServer):
 	
 	def updateJobOnly(self, wantClear = False, forceClean = False):
 		self._JobId += 1
-		JobId = '%d %d' % (time(), self._JobId)
+		JobId = '%d_%d' % (time(), self._JobId)
 		(MC, wld) = self.getStratumJob(JobId, wantClear=wantClear)
 		(height, merkleTree, cb, prevBlock, bits) = MC[:5]
 		
@@ -287,7 +291,10 @@ class StratumServer(networkserver.AsyncSocketServer):
 		elif self.rejecting:
 			self.rejecting = False
 			self.logger.info('Coinbase small enough for stratum again: reenabling')
-		
+
+		if hasattr(merkleTree, 'start_time'):
+			self.logger.info('ROOTSTOCK: getblocktemplate: {}, {}, {}'.format(merkleTree.start_time, merkleTree.finish_time, JobId))
+
 		txn = deepcopy(merkleTree.data[0])
 		cb += self.extranonce1null + b'Eloi'
 		txn.setCoinbase(cb)
