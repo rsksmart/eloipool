@@ -357,6 +357,7 @@ RBPs = []
 from bitcoin.varlen import varlenEncode, varlenDecode
 import bitcoin.txn
 from merklemaker import assembleBlock
+from datetime import datetime
 
 if not hasattr(config, 'BlockSubmissions'):
 	config.BlockSubmissions = None
@@ -385,18 +386,26 @@ def blockSubmissionThread(payload, blkhash, share):
 		tries += 1
 		TS = servers.pop(0)
 		UpstreamBitcoindJSONRPC = TS['access']
+		start_time = None
+		finish_time = None
 		try:
 			# BIP 22 standard submitblock
+			start_time = datetime.now()
 			reason = UpstreamBitcoindJSONRPC.submitblock(payload)
+			finish_time = datetime.now()
 		except BaseException as gbterr:
 			gbterr_fmt = traceback.format_exc()
 			try:
 				try:
 					# bitcoind 0.5/0.6 getmemorypool
+					start_time = datetime.now()
 					reason = UpstreamBitcoindJSONRPC.getmemorypool(payload)
+					finish_time = datetime.now()
 				except:
 					# Old BIP 22 draft getmemorypool
+					start_time = datetime.now()
 					reason = UpstreamBitcoindJSONRPC.getmemorypool(payload, {})
+					finish_time = datetime.now()
 				if reason is True:
 					reason = None
 				elif reason is False:
@@ -418,7 +427,12 @@ def blockSubmissionThread(payload, blkhash, share):
 				
 				servers.append(TS)
 				continue
-		
+
+		if finish_time is not None:
+			blockSubmissionThread.logger.info("ROOTSTOCK: submitblock: {}, {}, {}:{}, {}".format(start_time, finish_time, "block" if not reason else "noblock", share['jobid'], b2a_hex(share['nonce']).decode('ascii')))
+		elif start_time is not None:
+			blockSubmissionThread.logger.info("Submit failed {}".format(tries))
+
 		# At this point, we have a reason back
 		if reason:
 			# FIXME: The returned value could be a list of multiple responses

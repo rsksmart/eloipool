@@ -31,6 +31,7 @@ from struct import pack
 import threading
 from time import sleep, time
 import traceback
+from datetime import datetime
 
 _makeCoinbase = [0, 0]
 _filecounter = 0
@@ -481,9 +482,14 @@ class merkleMaker(threading.Thread):
 		return (AcceptedScore, TotalScore)
 	
 	def _updateMerkleTree_fromTS(self, TS):
+		start_time = datetime.now()
 		MP = self._CallGBT(TS)
+		finish_time = datetime.now()
+		self.start_time, self.finish_time = start_time, finish_time
+		self.logger.error('ROOTSTOCK: CallGBT: {}, {}, {}'.format(start_time, finish_time, MP))
+
 		newMerkleTree = self._ProcessGBT(MP, TS)
-		
+
 		# Some versions of bitcoinrpc ServiceProxy have problems copying/pickling, so just store name and URI for now
 		newMerkleTree.source = TS['name']
 		newMerkleTree.source_uri = TS['uri']
@@ -736,6 +742,7 @@ class merkleMaker(threading.Thread):
 		mt = self.curClearMerkleTree if wantClear else self.currentMerkleTree
 		cb = self.makeCoinbase(height=height)
 		rollPrevBlk = (mt == self.curClearMerkleTree)
+		mt.start_time, mt.finish_time = self.start_time, self.finish_time
 		return (height, mt, cb, prevBlock, bits, rollPrevBlk)
 
 # merkleMaker tests
