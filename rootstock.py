@@ -18,6 +18,8 @@ class Rootstock(threading.Thread):
 		self.minerfees = None
 		self.notify = None
 		self.target = None
+		self.parenthash = None
+		self.lastparenthash = None
 
 	def _prepare(self):
 		self.RootstockSources = list(getattr(self, 'RootstockSources', ()))
@@ -61,7 +63,8 @@ class Rootstock(threading.Thread):
 			blockhash = base64.b64decode(work['blockHashForMergedMining'])
 			minerfees = float(work['feesPaidToMiner'])
 			target = int(work['target'])
-			self._updateBlockHash(blockhash, notify, minerfees, target)
+			parenthash = base64.b64decode(work['parentBlockHash'])
+			self._updateBlockHash(blockhash, notify, minerfees, target, parenthash)
 		sleep(self.RootstockPollPeriod)
 
 	def _callGetWork(self):
@@ -85,11 +88,12 @@ class Rootstock(threading.Thread):
 		access = RS['access']
 		return access.eth_getWork()
 
-	def _updateBlockHash(self, blockhash, notify, minerfees, target):
+	def _updateBlockHash(self, blockhash, notify, minerfees, target, parenthash):
 		if self.blockhash != blockhash:
-			self.blockhash, self.notify, self.minerfees, self.target = blockhash, notify, minerfees, target
-			self.logger.info('New block hash {0} {1:X}'.format(self.blockhash, target))
-			if (self.RootstockNotifyPolicy == 1 and notify) or (self.RootstockNotifyPolicy == 2):
+			self.blockhash, self.notify, self.minerfees, self.target, self.parenthash = blockhash, notify, minerfees, target, parenthash
+			self.logger.info('New block hash {0} {1:X}'.format(b2a_hex(self.blockhash).decode('utf8'), target))
+			if (self.RootstockNotifyPolicy == 1 and notify) or (self.RootstockNotifyPolicy == 2 and self.parenthash != self.lastparenthash):
+				self.lastparenthash = self.parenthash
 				self.logger.info('Update miners work')
 				self.onBlockChange()
 
