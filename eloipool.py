@@ -561,8 +561,8 @@ def checkShare(share):
 	DupeShareHACK[data] = None
 	
 	blkhash = dblsha(data)
-	#if blkhash[28:] != b'\0\0\0\0':
-	#	raise RejectedShare('H-not-zero')
+	if blkhash[28:] != b'\0\0\0\0':
+		raise RejectedShare('H-not-zero')
 	blkhashn = LEhash2int(blkhash)
 	
 	global networkTarget
