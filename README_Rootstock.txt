@@ -182,3 +182,109 @@ For example:
 will print the target of the last work from RSKD
 
 
+Parsing eloipool logs
+=====================
+
+Prerequisites
+-------------
+
+Install parse ( https://pypi.python.org/pypi/parse )
+
+> pip install parse
+
+
+Execution
+---------
+
+Calling it without arguments will display a usage text
+
+> ./logparser.py
+
+usage: logparser.py [-h] [-o OUTPUT] [-s] logFile                  
+logparser.py: error: the following arguments are required: logFile 
+
+With -o OUTPUT will extract the logged actions from the log file and will
+write it to in CSV format to the file specified.
+
+> ./logparser.py logs/ckpool.log -o actions.csv
+
+The fields logged are: action name, start time, duration, id
+
+> ./logparser.py logs/ckpool.log -s
+
+With the -s flag will display a summary of the high level operations
+
+The fields logged are: action name, start time, duration, jobid, clients, notification duration
+
+
+Output example
+--------------
+
+An example of the output file is the following
+
+getblocktemplate, 2016-04-21 16:06:13.505723, 3.71, 1461265573_288
+mining.notify, 2016-04-21 16:06:13.909000, 0.0, 1461265573_288:139910978322384
+mining.submit, 2016-04-21 16:06:36.478000, 0.0, 1461265573_287:7f866c8d
+getblocktemplate, 2016-04-21 16:06:33.800235, 3.664, 1461265596_289
+submitblock, 2016-04-21 16:06:36.480304, 16.67, 1461265573_287:7f866c8d
+mining.notify, 2016-04-21 16:06:36.496000, 1.0, 1461265596_289:139910978322384
+getblocktemplate, 2016-04-21 16:06:38.825879, 4.112, 1461265598_290
+mining.notify, 2016-04-21 16:06:38.834000, 6.0, 1461265598_290:139910978322384
+getblocktemplate, 2016-04-21 16:06:38.825879, 4.112, 1461265599_291
+
+
+Example of summary generated
+----------------------------
+
+submitblock, 2016-04-21 16:05:23.170000, 42.063, 1461265523_275, 1, 30.42
+getblocktemplate, 2016-04-21 16:05:23.009555, 3.67, 1461265523_276, 1, 212.78
+getblocktemplate, 2016-04-21 16:05:28.055781, 3.731, 1461265528_277, 1, 4.49
+getblocktemplate, 2016-04-21 16:05:28.055781, 3.731, 1461265528_278, 1, 402.49
+submitblock, 2016-04-21 16:05:46.359000, 2.386, 1461265528_277, 1, 11.937
+getblocktemplate, 2016-04-21 16:05:43.265002, 3.673, 1461265546_279, 1, 3098.33
+submitblock, 2016-04-21 16:05:47.224000, 3.21, 1461265546_279, 1, 9.273
+getblocktemplate, 2016-04-21 16:05:43.265002, 3.673, 1461265547_280, 1, 3963.33
+getblocktemplate, 2016-04-21 16:05:48.340647, 3.565, 1461265548_281, 1, 3.79
+getblocktemplate, 2016-04-21 16:05:48.340647, 3.565, 1461265548_282, 1, 391.79
+
+
+Analysis
+--------
+
+For now there are two operations being logged: getblocktemplate and submitblock.
+
+* getblocktemplate
+
+We interpret the following line:
+
+getblocktemplate, 2016-04-21 16:05:43.265002, 3.673, 1461265546_279, 1, 3098.33
+
+action: getblocktemplate
+start: 2016-04-21 16:05:43.265
+	The time that the getblocktemplate call was made to bitcoind
+duration: 3.673
+	The duration in miliseconds of the getblocktemplate call
+jobid: 1461265546_279
+	The jobid assigned by eloipool
+clients: 1
+	The numbers of clients who received the mining.notify for the jobid
+elapsed: 3098.33
+	The time elapsed until the last notification was sent to a miner, in miliseconds
+
+* submitblock
+
+This line can be interpreted as
+
+submitblock, 2016-04-21 16:05:46.359000, 2.386, 1461265528_277, 1, 11.937
+
+action: submitblock
+start: 2016-04-21 16:05:46.359
+	The time the mining.submit was received by bitcoind
+duration: 2.386
+	The time elapsed until the block is sent to bitcoind, in miliseconds
+jobid: 1461265528_277
+	The jobid being submitted to bitcoind
+clients: 1
+	This is always 1 for submitblock
+elapsed: 11.937
+	The duration in miliseconds of the submitblock call to bitcoind
