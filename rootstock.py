@@ -62,7 +62,7 @@ class Rootstock(threading.Thread):
 			notify = work['notifyFlag']
 			blockhash = base64.b64decode(work['blockHashForMergedMining'])
 			minerfees = float(work['feesPaidToMiner'])
-			target = int(work['target'])
+			target = int(work['target'], 16)
 			parenthash = base64.b64decode(work['parentBlockHash'])
 			self._updateBlockHash(blockhash, notify, minerfees, target, parenthash)
 		sleep(self.RootstockPollPeriod)
