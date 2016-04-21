@@ -433,7 +433,7 @@ def blockSubmissionThread(payload, blkhash, share):
 				continue
 
 		if finish_time is not None:
-			blockSubmissionThread.logger.info("ROOTSTOCK: submitblock: {}, {}, {}:{}".format(start_time, finish_time, "block" if not reason else "noblock", share['jobid']))
+			blockSubmissionThread.logger.info("ROOTSTOCK: submitblock: {}, {}, {}:{}, {}".format(start_time, finish_time, "block" if not reason else "noblock", share['jobid'], b2a_hex(share['nonce']).decode('ascii')))
 		elif start_time is not None:
 			blockSubmissionThread.logger.info("Submit failed {}".format(tries))
 

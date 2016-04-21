@@ -72,7 +72,7 @@ class StratumHandler(networkserver.SocketHandler):
 		if not inbuf:
 			return
 
-		self.logger.info("ROOTSTOCK: parse_client_msg: {} {}".format(id(self), inbuf))
+		self.logger.info("ROOTSTOCK: parse_client_msg: {}, {}".format(id(self), inbuf))
 
 		try:
 			rpc = json.loads(inbuf)
@@ -154,7 +154,8 @@ class StratumHandler(networkserver.SocketHandler):
 				],
 			})
 			self.lastBDiff = bdiff
-		self.logger.info("ROOTSTOCK: send_client_send: {}, {:X}, {}".format(id(self), id(bdiff), self.server.JobBytes.decode('utf-8')))
+		message = self.server.JobBytes.decode('utf-8') if hasattr(self.server, 'JobBytes') and self.server.JobBytes is not None else '{}'
+		self.logger.info("ROOTSTOCK: send_client_send: {}, {:X}, {}".format(id(self), id(bdiff), message))
 		self.push(self.server.JobBytes)
 		self.logger.info("ROOTSTOCK: send_client_complete: {}, {:X}".format(id(self), id(bdiff)))
 		if len(self.JobTargets) > 4:
@@ -292,9 +293,6 @@ class StratumServer(networkserver.AsyncSocketServer):
 			self.rejecting = False
 			self.logger.info('Coinbase small enough for stratum again: reenabling')
 
-		if hasattr(merkleTree, 'start_time'):
-			self.logger.info('ROOTSTOCK: getblocktemplate: {}, {}, {}'.format(merkleTree.start_time, merkleTree.finish_time, JobId))
-
 		txn = deepcopy(merkleTree.data[0])
 		cb += self.extranonce1null + b'Eloi'
 		txn.setCoinbase(cb)
@@ -302,7 +300,9 @@ class StratumServer(networkserver.AsyncSocketServer):
 		pos = txn.data.index(cb) + len(cb)
 		
 		steps = list(b2a_hex(h).decode('ascii') for h in merkleTree._steps)
-		
+
+		tim = int(time())
+		self.logger.info('ROOTSTOCK: getblocktemplate: {}, {}, {}'.format(merkleTree.start_time, merkleTree.finish_time, JobId))
 		self.JobBytes = json.dumps({
 			'id': None,
 			'method': 'mining.notify',
@@ -314,7 +314,7 @@ class StratumServer(networkserver.AsyncSocketServer):
 				steps,
 				self.BlockVersionHex,
 				b2a_hex(bits[::-1]).decode('ascii'),
-				b2a_hex(struct.pack('>L', int(time()))).decode('ascii'),
+				b2a_hex(struct.pack('>L',tim)).decode('ascii'),
 				forceClean or not self.IsJobValid(self.JobId)
 			],
 		}).encode('ascii') + b"\n"
