@@ -5,6 +5,7 @@ import logging
 import threading
 import traceback
 import base64
+from datetime import datetime
 from binascii import b2a_hex
 from time import sleep
 from util import bdiff2target
@@ -103,19 +104,23 @@ class Rootstock(threading.Thread):
 			return None, None
 		return blockhash, target
 
-def rootstockSubmissionThread(payload):
+def rootstockSubmissionThread(payload, blkhash, share):
 	servers = list(a for b in rootstockSubmissionThread.rootstock.RootstockSources for a in b)
 
 	payload = b2a_hex(payload).decode('ascii')
 	tries = 0
+	start_time = None
+	finish_time = None
 	while len(servers):
 		tries += 1
 		RS = servers.pop(0)
-		#Don't reuse the same conection object that getWork since processSPVProff can take some time to complete
+		#Don't reuse the same conection object that getWork since processSPVProof can take some time to complete
 		#UpstreamRskdJSONRPC = RS['access']
 		UpstreamRskdJSONRPC = jsonrpc.ServiceProxy(RS['uri'])
 		try:
+			start_time = datetime.now()
 			UpstreamRskdJSONRPC.eth_processSPVProof(payload)
+			finish_time = datetime.now()
 		except BaseException as gbterr:
 			gbterr_fmt = traceback.format_exc()
 			if tries > len(servers):
@@ -124,6 +129,12 @@ def rootstockSubmissionThread(payload):
 				return
 			servers.append(RS)
 			continue
+	if finish_time is not None:
+		rootstockSubmissionThread.logger.info("ROOTSTOCK: processSPVProof: {}, {}, {}, {}".format(start_time, finish_time, share['jobid'], b2a_hex(share['nonce']).decode('ascii')))
+	else:
+		rootstockSubmissionThread.logger.info("processSPVProof failed: {}".format(tries))
+
+
 rootstockSubmissionThread.logger = logging.getLogger('rootstockSubmission')
 
 rootstock = Rootstock()

@@ -602,7 +602,7 @@ def checkShare(share):
 				payload += assembleBlock(data, txlist)[80:]
 
 		if submitRootstock:
-			threading.Thread(target=rootstockSubmissionThread, args=(payload,)).start()
+			threading.Thread(target=rootstockSubmissionThread, args=(payload, blkhash, share)).start()
 
 		if not submitBitcoin:
 			return
