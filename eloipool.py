@@ -589,6 +589,7 @@ def checkShare(share):
 
 	if submitBitcoin or submitRootstock:
 		if submitBitcoin:
+			share['BTC_SOLUTION'] = True
 			logfunc("Submitting upstream")
 			RBDs.append( deepcopy( (data, txlist, share.get('blkdata', None), workMerkleTree, share, wld) ) )
 
@@ -602,6 +603,7 @@ def checkShare(share):
 				payload += assembleBlock(data, txlist)[80:]
 
 		if submitRootstock:
+			share['RSK_SOLUTION'] = True
 			threading.Thread(target=rootstockSubmissionThread, args=(payload, blkhash, share)).start()
 
 		if not submitBitcoin:
@@ -723,6 +725,9 @@ def receiveShare(share):
 		share['rejectReason'] = 'ERROR'
 		raise
 	finally:
+		checkShare.logger.info("ROOTSTOCK: solution: {}, {}, {}, {}".format(share['jobid'], b2a_hex(share['nonce']).decode('ascii'),
+							   "BTC" if share.get('BTC_SOLUTION', False) else "--",
+							   "RSK" if share.get('RSK_SOLUTION', False) else "--"))
 		if not share.get('upstreamRejectReason', None) is PendingUpstream:
 			logShare(share)
 
