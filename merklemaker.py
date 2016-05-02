@@ -356,7 +356,11 @@ class merkleMaker(threading.Thread):
 	def _ProcessGBT(self, MP, TS = None):
 		oMP = MP
 		MP = deepcopy(MP)
-		
+
+		if not hasattr(self, 'lastPreviousblockhash') or self.lastPreviousblockhash != MP['previousblockhash']:
+			self.logger.warning("ROOTSTOCK: newblock: {}, {}".format(MP['curtime'] if 'curtime' in MP else "--", MP['previousblockhash']))
+			self.lastPreviousblockhash = MP['previousblockhash']
+
 		prevBlock = bytes.fromhex(MP['previousblockhash'])[::-1]
 		if 'height' not in MP:
 			MP['height'] = TS['access'].getinfo()['blocks'] + 1
@@ -486,7 +490,7 @@ class merkleMaker(threading.Thread):
 		MP = self._CallGBT(TS)
 		finish_time = datetime.now()
 		self.start_time, self.finish_time = start_time, finish_time
-		self.logger.error('ROOTSTOCK: CallGBT: {}, {}, {}'.format(start_time, finish_time, MP))
+		#self.logger.error('ROOTSTOCK: CallGBT: {}, {}, {}'.format(start_time, finish_time, MP))
 
 		newMerkleTree = self._ProcessGBT(MP, TS)
 
