@@ -137,7 +137,7 @@ def makeCoinbaseTxn(coinbaseValue, useCoinbaser = True, prevBlockHex = None, rsk
 
 
 import jsonrpc_getwork
-from util import Bits2Target
+from util import Bits2Target, bdiff2target
 
 workLog = {}
 userStatus = {}
@@ -156,7 +156,10 @@ def blockChanged():
 	if bits is None:
 		networkTarget = None
 	else:
-		networkTarget = Bits2Target(bits)
+		if hasattr(config, "DEV_MODE_ON") and config.DEV_MODE_ON:
+			networkTarget = bdiff2target(config.BTC_ELOIPOOL_DIFF)
+		else:
+			networkTarget = Bits2Target(bits)
 	if MM.lastBlock != (None, None, None):
 		global DupeShareHACK
 		DupeShareHACK = {}
@@ -561,8 +564,9 @@ def checkShare(share):
 	DupeShareHACK[data] = None
 	
 	blkhash = dblsha(data)
-	if blkhash[28:] != b'\0\0\0\0':
-		raise RejectedShare('H-not-zero')
+	if not hasattr(config, 'DEV_MODE_ON') or not config.DEV_MODE_ON:
+		if blkhash[28:] != b'\0\0\0\0':
+			raise RejectedShare('H-not-zero')
 	blkhashn = LEhash2int(blkhash)
 	
 	global networkTarget
@@ -582,7 +586,10 @@ def checkShare(share):
 
 	if hasattr(workMerkleTree, "rootstockBlockInfo") and workMerkleTree.rootstockBlockInfo is not None:
 		rootstockBlockHash = workMerkleTree.rootstockBlockInfo[0]
-		rootstockTarget = workMerkleTree.rootstockBlockInfo[1]
+		if hasattr(config, 'DEV_MODE_ON') and config.DEV_MODE_ON:
+			rootstockTarget = bdiff2target(config.RSK_ELOIPOOL_DIFF)
+		else:
+			rootstockTarget = workMerkleTree.rootstockBlockInfo[1]
 
 	submitRootstock = rootstockTarget is not None and blkhashn <= rootstockTarget
 	submitBitcoin = blkhashn <= networkTarget
@@ -1005,7 +1012,10 @@ if __name__ == "__main__":
 	stratumsrv.RaiseRedFlags = RaiseRedFlags
 	stratumsrv.getTarget = getTarget
 	stratumsrv.BlockVersionHex = '%08x' % (config.BlockVersion,)
-	stratumsrv.defaultTarget = config.ShareTarget
+	if hasattr(config, 'DEV_MODE_ON') and config.DEV_MODE_ON:
+		stratumsrv.defaultTarget = bdiff2target(config.MINER_DIFF)
+	else:
+		stratumsrv.defaultTarget = config.ShareTarget
 	stratumsrv.IsJobValid = IsJobValid
 	stratumsrv.checkAuthentication = checkAuthentication
 	if not hasattr(config, 'StratumAddresses'):

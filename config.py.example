@@ -299,3 +299,11 @@ RootstockSources = (
 RootstockPollPeriod = 0
 
 RootstockNotifyPolicy = 0
+
+# Use in development mode only
+DEV_MODE_ON = True
+# Difficulty value that will be send to the miners
+MINER_DIFF = 0.005
+# Difficulty value that will be used in block submission to RSK or BTC
+RSK_ELOIPOOL_DIFF = 0.01
+BTC_ELOIPOOL_DIFF = 0.1
