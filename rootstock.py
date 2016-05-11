@@ -29,7 +29,6 @@ class Rootstock(threading.Thread):
 		if not self.RootstockPollPeriod:
 			self.RootstockPollPeriod = self.MM.IdleSleepTime
 		LeveledRS = {}
-		URI2Access = {}
 		for i in range(len(self.RootstockSources)):
 			RS = self.RootstockSources[i]
 			if 'uri' not in RS:
@@ -38,10 +37,6 @@ class Rootstock(threading.Thread):
 				RS['name'] = 'RootstockSources[{0}]'.format(i)
 			RS.setdefault('priority', 0)
 			RS.setdefault('weight', 1)
-			if RS['uri'] not in URI2Access:
-				access = jsonrpc.ServiceProxy(RS['uri'])
-				URI2Access[RS['uri']] = access
-			RS['access'] = URI2Access[RS['uri']]
 			LeveledRS.setdefault(RS['priority'], []).append(RS)
 		LeveledRS = tuple(x[1] for x in sorted(LeveledRS.items()))
 		self.RootstockSources = LeveledRS
@@ -86,7 +81,7 @@ class Rootstock(threading.Thread):
 		return None
 
 	def _callGetWorkFrom(self, RS):
-		access = RS['access']
+		access = jsonrpc.ServiceProxy(RS['uri'])
 		return access.eth_getWork()
 
 	def _updateBlockHash(self, blockhash, notify, minerfees, target, parenthash):
