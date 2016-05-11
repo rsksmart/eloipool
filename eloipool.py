@@ -378,7 +378,7 @@ def blockSubmissionThread(payload, blkhash, share):
 	
 	if hasattr(share['merkletree'], 'source_uri'):
 		servers.insert(0, {
-			'access': jsonrpc.ServiceProxy(share['merkletree'].source_uri),
+			'uri': share['merkletree'].source_uri,
 			'name': share['merkletree'].source,
 		})
 	elif not servers:
@@ -392,7 +392,7 @@ def blockSubmissionThread(payload, blkhash, share):
 	while len(servers):
 		tries += 1
 		TS = servers.pop(0)
-		UpstreamBitcoindJSONRPC = TS['access']
+		UpstreamBitcoindJSONRPC = jsonrpc.ServiceProxy(TS['uri'])
 		start_time = None
 		finish_time = None
 		try:
@@ -402,38 +402,22 @@ def blockSubmissionThread(payload, blkhash, share):
 			finish_time = datetime.now()
 		except BaseException as gbterr:
 			gbterr_fmt = traceback.format_exc()
-			try:
-				try:
-					# bitcoind 0.5/0.6 getmemorypool
-					start_time = datetime.now()
-					reason = UpstreamBitcoindJSONRPC.getmemorypool(payload)
-					finish_time = datetime.now()
-				except:
-					# Old BIP 22 draft getmemorypool
-					start_time = datetime.now()
-					reason = UpstreamBitcoindJSONRPC.getmemorypool(payload, {})
-					finish_time = datetime.now()
-				if reason is True:
-					reason = None
-				elif reason is False:
-					reason = 'rejected'
-			except BaseException as gmperr:
-				now = time()
-				if now > nexterr:
-					# FIXME: This will show "Method not found" on pre-BIP22 servers
-					RaiseRedFlags(gbterr_fmt)
-					nexterr = now + 5
-				if MM.currentBlock[0] not in myblock and tries > len(servers):
-					RBFs.append( (('next block', MM.currentBlock, now, (gbterr, gmperr)), payload, blkhash, share) )
-					RaiseRedFlags('Giving up on submitting block to upstream \'%s\'' % (TS['name'],))
-					if share['upstreamRejectReason'] is PendingUpstream:
-						share['upstreamRejectReason'] = 'GAVE UP'
-						share['upstreamResult'] = False
-						logShare(share)
-					return
-				
-				servers.append(TS)
-				continue
+			now = time()
+			if now > nexterr:
+				# FIXME: This will show "Method not found" on pre-BIP22 servers
+				RaiseRedFlags(gbterr_fmt)
+				nexterr = now + 5
+			if MM.currentBlock[0] not in myblock and tries > len(servers):
+				RBFs.append((('next block', MM.currentBlock, now, (gbterr, gbterr)), payload, blkhash, share))
+				RaiseRedFlags('Giving up on submitting block to upstream \'%s\'' % (TS['name'],))
+				if share['upstreamRejectReason'] is PendingUpstream:
+					share['upstreamRejectReason'] = 'GAVE UP'
+					share['upstreamResult'] = False
+					logShare(share)
+				return
+
+			servers.append(TS)
+			continue
 
 		if finish_time is not None:
 			blockSubmissionThread.logger.info("ROOTSTOCK: submitblock: {}, {}, {}:{}, {}".format(start_time, finish_time, "block" if not reason else "noblock", share['jobid'], b2a_hex(share['nonce']).decode('ascii')))
