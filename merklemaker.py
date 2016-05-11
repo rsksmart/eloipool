@@ -326,30 +326,14 @@ class merkleMaker(threading.Thread):
 			txninfo[pot:] = ()
 	
 	def _CallGBT(self, TS):
-		access = TS['access']
+		access = jsonrpc.ServiceProxy(TS['uri'])
 		self.logger.debug('Requesting new template from \'%s\'' % (TS['name'],))
 		try:
 			# First, try BIP 22 standard getblocktemplate :)
 			MP = access.getblocktemplate(self.GBTReq)
 			access.OldGMP = False
 		except:
-			try:
-				# Failing that, give BIP 22 draft (2012-02 through 2012-07) getmemorypool a chance
-				MP = access.getmemorypool(self.GMPReq)
-			except:
-				try:
-					# Finally, fall back to bitcoind 0.5/0.6 getmemorypool
-					MP = access.getmemorypool()
-				except:
-					MP = False
-			if MP is False:
-				# This way, we get the error from the BIP22 call if the old one fails too
-				raise
-			
-			# Pre-BIP22 server (bitcoind <0.7 or Eloipool <20120513)
-			if not access.OldGMP:
-				access.OldGMP = True
-				self.logger.warning('Upstream \'%s\' is not BIP 22 compatible' % (TS['name'],))
+			raise
 		
 		return MP
 	
