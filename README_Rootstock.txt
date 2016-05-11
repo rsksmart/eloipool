@@ -14,7 +14,7 @@ Installation
 
 This instructions are partially based on https://github.com/luke-jr/eloipool/issues/3
 
-0) Installation of dependecies will be done inside a python virtualenv
+0) Installation of dependencies will be done inside a python virtualenv
 
 > sudo apt-get install python3-venv
 > python3 -m venv pyenv
@@ -24,13 +24,17 @@ This instructions are partially based on https://github.com/luke-jr/eloipool/iss
 
 > git clone https://github.com/rootstock/eloipool.git
 
-2) Install dependecies
+2) Install dependencies
 
 > cd eloipool
 
 2.1) python-bitcoinrpc
 
 > pip install -e git+https://github.com/jgarzik/python-bitcoinrpc.git#egg=python-bitcoinrpc
+
+After commit df459b7c00d6a9320fe7adcfa11e9c812127ffa3 there's an extra check for the Content-Type "application/json"
+
+> pip install -e git+https://github.com/jgarzik/python-bitcoinrpc.git@df459b7c00d6a9320fe7adcfa11e9c812127ffa3#egg=python_bitcoinrpc
 
 2.2) python-base58
 
