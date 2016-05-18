@@ -2,12 +2,14 @@ import parse
 import json
 import argparse
 import sys
+from collections import OrderedDict as odict
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument('logFile', help='log filename')
 parser.add_argument('-o', '--output', help='Raw output log operations (CSV format)')
 parser.add_argument('-s', '--summary', action='store_true', help='Summary of operations')
+parser.add_argument('--max-notify-delta', type=int, default=500, help='Max delta between notify calls (in milliseconds)')
 args = parser.parse_args()
 
 
@@ -21,7 +23,7 @@ class LogFile:
         self.filename = filename
         self.output = open(output, "w+") if output else None
         self.summary = summary
-        self.last_getblocktemplate = None
+        self.getblocktemplates = odict()
         self.server_calls = {}      # calls to bitcoind / rskd
         self.client_calls = {}      # calls to clients
         self.client_jobs = {}       # jobs received from clients
@@ -267,32 +269,38 @@ class LogFile:
     def process_action(self, method, start, duration, id=None):
 
         if method == 'getblocktemplate':
-            if self.last_getblocktemplate is not None:
-                prev_start, prev_duration, prev_id, prev_clients = self.last_getblocktemplate
-                last_client = "{:.2f}".format(delta_ms(prev_start, prev_clients[-1]) - prev_duration) if len(
-                    prev_clients) > 0 else '--'
-                self.print_summary(
-                    "getblocktemplate, {}, {}, {}, {}, {}".format(prev_start, prev_duration, prev_id, len(prev_clients),
-                                                                  last_client))
+            if id in self.getblocktemplates:
+                print("Error: getblocktemplate alread received {} at {}".format(id, start), file=sys.stderr)
+                return
 
-            self.last_getblocktemplate = (start, duration, id, [])
+            if len(self.getblocktemplates) > 3:
+                job_id = next(iter(self.getblocktemplates))
+                prev_start, prev_duration, prev_id, prev_clients, last_client_start = self.getblocktemplates[job_id]
+                last_client = "{:.3f}".format(delta_ms(prev_start, last_client_start) - prev_duration) if len(prev_clients) > 0 else '--'
+                self.print_summary("getblocktemplate, {}, {}, {}, {}, {}".format(prev_start, prev_duration, prev_id, len(prev_clients), last_client))
+                del self.getblocktemplates[job_id]
+
+            self.getblocktemplates[id] = start, duration, id, {}, None
 
         elif method == 'mining.notify':
-            if self.last_getblocktemplate is not None:
-                prev_start, prev_duration, prev_id, prev_clients = self.last_getblocktemplate
-                if prev_id == id.split(":")[0]:
-                    prev_clients += [start]
-                    self.last_getblocktemplate = prev_start, prev_duration, prev_id, prev_clients
-                else:
-                    print("Error: mining.notify without getblocktemplate: {}, {} ".format(start, id), file=sys.stderr)
+            [job_id, client_id] = id.split(":")
+            if job_id in self.getblocktemplates:
+                prev_start, prev_duration, prev_id, prev_clients, last_client_start = self.getblocktemplates[job_id]
+                if client_id not in prev_clients:
+                    prev_clients[client_id] = start
+                    if last_client_start is None or delta_ms(last_client_start, start) <= args.max_notify_delta:
+                        last_client_start = start
+                self.getblocktemplates[job_id] = prev_start, prev_duration, prev_id, prev_clients, last_client_start
             else:
+                #pendings = self.notify_pending.setdefault(job_id, [])
+                #pendings += [(client_id, start)]
                 print("Error: mining.notify without getblocktemplate: {}, {}".format(start, id), file=sys.stderr)
+                raise ValueError("Error: mining.notify without getblocktemplate: {}, {}".format(start, id))
 
         elif method == 'submitblock':
             if id in self.submit_jobs:
                 sub_jobid, sub_time, sub_nonce, blockhash = self.submit_jobs[id]
-                self.print_summary(
-                    "submitblock, {}, {}, {}, 1, {}".format(sub_time, delta_ms(sub_time, start), sub_jobid, duration))
+                self.print_summary("submitblock, {}, {}, {}, 1, {}".format(sub_time, delta_ms(sub_time, start), sub_jobid, duration))
             else:
                 print("Error: submitblock without valid job: {}, {}".format(id, start), file=sys.stderr)
 
@@ -301,15 +309,12 @@ class LogFile:
             print(message)
 
     def flush_info(self):
-        if self.last_getblocktemplate is not None:
-            prev_start, prev_duration, prev_id, prev_clients = self.last_getblocktemplate
-            last_client = "{:.2f}".format(delta_ms(prev_start, prev_clients[-1]) - prev_duration) if len(
-                prev_clients) > 0 else '--'
-            self.print_summary(
-                "getblocktemplate, {}, {}, {}, {}, {}".format(prev_start, prev_duration, prev_id, len(prev_clients),
-                                                              last_client))
+        for job_id, data in self.getblocktemplates.items():
+            prev_start, prev_duration, prev_id, prev_clients, last_client_start = data
+            last_client = "{:.3f}".format(delta_ms(prev_start, last_client_start) - prev_duration) if len(prev_clients) > 0 else '--'
+            self.print_summary("getblocktemplate, {}, {}, {}, {}, {}".format(prev_start, prev_duration, prev_id, len(prev_clients), last_client))
 
-            self.last_getblocktemplate = None
+        self.getblocktemplates = odict()
 
         self.submit_jobs = None
 
