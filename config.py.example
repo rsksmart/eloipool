@@ -278,3 +278,11 @@ LogFile = {
 # - 210000 is how many blocks until the next halving
 # This algorithm can be modified slightly for altcoins which calculate a block reward from only the height.
 SubsidyAlgo = lambda height: 5000000000 >> (height // 210000)
+
+# Use in development mode only
+DEV_MODE_ON = True
+# Difficulty value that will be send to the miners
+MINER_DIFF = 0.005
+# Difficulty value that will be used in block submission to RSK or BTC
+RSK_ELOIPOOL_DIFF = 0.01
+BTC_ELOIPOOL_DIFF = 0.1
