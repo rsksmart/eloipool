@@ -4,9 +4,9 @@ import jsonrpc
 import logging
 import threading
 import traceback
-import base64
 from datetime import datetime
 from binascii import b2a_hex
+from binascii import unhexlify
 from time import sleep
 from util import bdiff2target
 
@@ -56,10 +56,10 @@ class Rootstock(threading.Thread):
 		work = self._callGetWork()
 		if work is not None:
 			notify = work['notify']
-			blockhash = base64.b64decode(work['blockHashForMergedMining'])
+			blockhash = unhexlify(work['blockHashForMergedMining'][2:])
 			minerfees = float(work['feesPaidToMiner'])
 			target = int(work['target'], 16)
-			parenthash = base64.b64decode(work['parentBlockHash'])
+			parenthash = unhexlify(work['parentBlockHash'][2:])
 			self._updateBlockHash(blockhash, notify, minerfees, target, parenthash)
 		sleep(self.RootstockPollPeriod)
 
