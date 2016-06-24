@@ -109,12 +109,12 @@ def rootstockSubmissionThread(payload, blkhash, share):
 	while len(servers):
 		tries += 1
 		RS = servers.pop(0)
-		#Don't reuse the same conection object that getWork since processSPVProof can take some time to complete
+		#Don't reuse the same conection object that getWork since submitBitcoinBlock can take some time to complete
 		#UpstreamRskdJSONRPC = RS['access']
 		UpstreamRskdJSONRPC = jsonrpc.ServiceProxy(RS['uri'])
 		try:
 			start_time = datetime.now()
-			UpstreamRskdJSONRPC.mnr_processSPVProof(payload)
+			UpstreamRskdJSONRPC.mnr_submitBitcoinBlock(payload)
 			finish_time = datetime.now()
 		except BaseException as gbterr:
 			gbterr_fmt = traceback.format_exc()
@@ -125,9 +125,9 @@ def rootstockSubmissionThread(payload, blkhash, share):
 			servers.append(RS)
 			continue
 	if finish_time is not None:
-		rootstockSubmissionThread.logger.info("ROOTSTOCK: processSPVProof: {}, {}, {}, {}".format(start_time, finish_time, share['jobid'], b2a_hex(share['nonce']).decode('ascii')))
+		rootstockSubmissionThread.logger.info("ROOTSTOCK: submitBitcoinBlock: {}, {}, {}, {}".format(start_time, finish_time, share['jobid'], b2a_hex(share['nonce']).decode('ascii')))
 	else:
-		rootstockSubmissionThread.logger.info("processSPVProof failed: {}".format(tries))
+		rootstockSubmissionThread.logger.info("submitBitcoinBlock failed: {}".format(tries))
 
 
 rootstockSubmissionThread.logger = logging.getLogger('rootstockSubmission')
