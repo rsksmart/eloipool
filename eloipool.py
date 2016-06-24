@@ -129,7 +129,7 @@ def makeCoinbaseTxn(coinbaseValue, useCoinbaser = True, prevBlockHex = None, rsk
 	txn.addOutput(coinbaseValue, pkScript)
 
 	if rsk_blockhash is not None:
-		txn.addOutput(0, b'\x6A\x52\x4F\x4F\x54\x53\x54\x4F\x43\x4B\x3A' + rsk_blockhash)
+		txn.addOutput(0, b'\x52\x53\x4B\x42\x4C\x4F\x43\x4B\x3A' + rsk_blockhash)
 	
 	# TODO
 	# TODO: red flag on dupe coinbase
