@@ -55,7 +55,7 @@ class Rootstock(threading.Thread):
 	def updateRootstock(self):
 		work = self._callGetWork()
 		if work is not None:
-			notify = work['notifyFlag']
+			notify = work['notify']
 			blockhash = base64.b64decode(work['blockHashForMergedMining'])
 			minerfees = float(work['feesPaidToMiner'])
 			target = int(work['target'], 16)
@@ -82,7 +82,7 @@ class Rootstock(threading.Thread):
 
 	def _callGetWorkFrom(self, RS):
 		access = jsonrpc.ServiceProxy(RS['uri'])
-		return access.eth_getWork()
+		return access.mnr_getWork()
 
 	def _updateBlockHash(self, blockhash, notify, minerfees, target, parenthash):
 		if self.blockhash != blockhash:
@@ -114,7 +114,7 @@ def rootstockSubmissionThread(payload, blkhash, share):
 		UpstreamRskdJSONRPC = jsonrpc.ServiceProxy(RS['uri'])
 		try:
 			start_time = datetime.now()
-			UpstreamRskdJSONRPC.eth_processSPVProof(payload)
+			UpstreamRskdJSONRPC.mnr_processSPVProof(payload)
 			finish_time = datetime.now()
 		except BaseException as gbterr:
 			gbterr_fmt = traceback.format_exc()

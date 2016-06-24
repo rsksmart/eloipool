@@ -12,3 +12,4 @@ midstate.so
 *.rej
 eloipool.worklog
 bitcoinrpc
+eloipool.log
