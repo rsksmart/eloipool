@@ -53,15 +53,21 @@ class Rootstock(threading.Thread):
 				self.logger.critical(traceback.format_exc())
 	
 	def updateRootstock(self):
-		work = self._callGetWork()
-		if work is not None:
-			notify = work['notify']
-			blockhash = unhexlify(work['blockHashForMergedMining'][2:])
-			minerfees = float(work['feesPaidToMiner'])
-			target = int(work['target'], 16)
-			parenthash = unhexlify(work['parentBlockHash'][2:])
-			self._updateBlockHash(blockhash, notify, minerfees, target, parenthash)
-		sleep(self.RootstockPollPeriod)
+		tries = 3
+		for tryNumber in range(0, tries):
+			work = self._callGetWork()
+			if work is False:
+				sleep(self.RootstockPollPeriod/tries)
+				continue
+			if work is not None:
+				notify = work['notify']
+				blockhash = unhexlify(work['blockHashForMergedMining'][2:])
+				minerfees = float(work['feesPaidToMiner'])
+				target = int(work['target'], 16)
+				parenthash = unhexlify(work['parentBlockHash'][2:])
+				self._updateBlockHash(blockhash, notify, minerfees, target, parenthash)
+				tryNumber = 0
+			sleep(self.RootstockPollPeriod)
 
 	def _callGetWork(self):
 		for RSPriList in self.RootstockSources:
@@ -74,8 +80,9 @@ class Rootstock(threading.Thread):
 						continue
 					return r
 				except:
+					self.logger.info("RSK {0} is not active".format(RS['name']))
 					if RSPriList == self.RootstockSources[-1] and i == len(RSPriList) - 1:
-						raise
+						return False
 					else:
 						self.logger.error(traceback.format_exc())
 		return None
