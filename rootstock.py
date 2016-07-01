@@ -53,21 +53,28 @@ class Rootstock(threading.Thread):
 				self.logger.critical(traceback.format_exc())
 	
 	def updateRootstock(self):
-		tries = 3
-		for tryNumber in range(0, tries):
-			work = self._callGetWork()
-			if work is False:
-				sleep(self.RootstockPollPeriod/tries)
-				continue
-			if work is not None:
-				notify = work['notify']
-				blockhash = unhexlify(work['blockHashForMergedMining'][2:])
-				minerfees = float(work['feesPaidToMiner'])
-				target = int(work['target'], 16)
-				parenthash = unhexlify(work['parentBlockHash'][2:])
-				self._updateBlockHash(blockhash, notify, minerfees, target, parenthash)
-				tryNumber = 0
-			sleep(self.RootstockPollPeriod)
+		work = self._callGetWork()
+		if work is False:
+			retryTime = self.RootstockPollPeriod / 3
+			getWorkTimeout = 15
+			accumRetryTime = 0
+			while True:
+				sleep(retryTime)
+				accumRetryTime += retryTime
+				work = self._callGetWork()
+				if work is not False:
+					break
+				if accumRetryTime > getWorkTimeout and self.blockhash is not None:
+					self.blockhash = None
+		if work is not None:
+			notify = work['notify']
+			blockhash = unhexlify(work['blockHashForMergedMining'][2:])
+			minerfees = float(work['feesPaidToMiner'])
+			target = int(work['target'], 16)
+			parenthash = unhexlify(work['parentBlockHash'][2:])
+			self._updateBlockHash(blockhash, notify, minerfees, target, parenthash)
+			tryNumber = 0
+		sleep(self.RootstockPollPeriod)
 
 	def _callGetWork(self):
 		for RSPriList in self.RootstockSources:
