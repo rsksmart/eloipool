@@ -52,7 +52,7 @@ class Rootstock(threading.Thread):
 			except:
 				self.logger.critical(traceback.format_exc())
 	
-	def updateRootstock(self):
+	def updateRootstock(self, triggeredByBlockSubmission = False):
 		work = self._callGetWork()
 		if work is False:
 			retryTime = self.RootstockPollPeriod / 3
@@ -74,7 +74,8 @@ class Rootstock(threading.Thread):
 			parenthash = unhexlify(work['parentBlockHash'][2:])
 			self._updateBlockHash(blockhash, notify, minerfees, target, parenthash)
 			tryNumber = 0
-		sleep(self.RootstockPollPeriod)
+		rskPollPeriod = 0 if triggeredByBlockSubmission else self.RootstockPollPeriod
+		sleep(rskPollPeriod)
 
 	def _callGetWork(self):
 		for RSPriList in self.RootstockSources:
@@ -130,6 +131,7 @@ def rootstockSubmissionThread(payload, blkhash, share):
 			start_time = datetime.now()
 			UpstreamRskdJSONRPC.mnr_submitBitcoinBlock(payload)
 			finish_time = datetime.now()
+			rootstock.updateRootstock(True)
 		except BaseException as gbterr:
 			gbterr_fmt = traceback.format_exc()
 			if tries > len(servers):
