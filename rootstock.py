@@ -56,7 +56,7 @@ class Rootstock(threading.Thread):
 		work = self._callGetWork()
 		if work is False:
 			retryTime = self.RootstockPollPeriod / 3
-			getWorkTimeout = 15
+			getWorkTimeout = 11
 			accumRetryTime = 0
 			while True:
 				sleep(retryTime)
@@ -96,7 +96,7 @@ class Rootstock(threading.Thread):
 		return None
 
 	def _callGetWorkFrom(self, RS):
-		access = jsonrpc.ServiceProxy(RS['uri'])
+		access = jsonrpc.ServiceProxy(RS['uri'], timeout = 5)
 		return access.mnr_getWork()
 
 	def _updateBlockHash(self, blockhash, notify, minerfees, target, parenthash):
