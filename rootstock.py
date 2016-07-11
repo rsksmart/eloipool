@@ -55,27 +55,36 @@ class Rootstock(threading.Thread):
 	def updateRootstock(self, triggeredByBlockSubmission = False):
 		work = self._callGetWork()
 		if work is False:
-			retryTime = self.RootstockPollPeriod / 3
-			getWorkTimeout = 11
-			accumRetryTime = 0
-			while True:
-				sleep(retryTime)
-				accumRetryTime += retryTime
-				work = self._callGetWork()
-				if work is not False:
-					break
-				if accumRetryTime > getWorkTimeout and self.blockhash is not None:
-					self.blockhash = None
+			work = self._retryCallGetWork(work)
 		if work is not None:
+			self._processGetWorkResponse(work)
+		rskPollPeriod = 0 if triggeredByBlockSubmission else self.RootstockPollPeriod
+		sleep(rskPollPeriod)
+
+	def _processGetWorkResponse(self, work):
+		try:
 			notify = work['notify']
 			blockhash = unhexlify(work['blockHashForMergedMining'][2:])
 			minerfees = float(work['feesPaidToMiner'])
 			target = int(work['target'], 16)
 			parenthash = unhexlify(work['parentBlockHash'][2:])
 			self._updateBlockHash(blockhash, notify, minerfees, target, parenthash)
-			tryNumber = 0
-		rskPollPeriod = 0 if triggeredByBlockSubmission else self.RootstockPollPeriod
-		sleep(rskPollPeriod)
+		except:
+			self.logger.critical(traceback.format_exc())
+
+	def _retryCallGetWork(self, work):
+		retryTime = self.RootstockPollPeriod / 3
+		getWorkTimeout = 11
+		accumRetryTime = 0
+		while True:
+			sleep(retryTime)
+			accumRetryTime += retryTime
+			work = self._callGetWork()
+			if work is not False:
+				break
+			if accumRetryTime > getWorkTimeout and self.blockhash is not None:
+				self.blockhash = None
+		return work
 
 	def _callGetWork(self):
 		for RSPriList in self.RootstockSources:
