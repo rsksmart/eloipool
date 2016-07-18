@@ -150,7 +150,7 @@ def updateBlocks():
 	server.wakeLongpoll()
 	stratumsrv.updateJob()
 
-def blockChanged():
+def blockChanged(triggeredByRskGetWork = False):
 	global MM, networkTarget, server
 	bits = MM.currentBlock[2]
 	if bits is None:
@@ -166,7 +166,7 @@ def blockChanged():
 		jsonrpc_getwork._CheckForDupesHACK = {}
 		workLog.clear()
 	server.wakeLongpoll(wantClear=True)
-	stratumsrv.updateJob(wantClear=True)
+	stratumsrv.updateJob(wantClear=True, triggeredByRskGetWork=triggeredByRskGetWork)
 
 
 from time import sleep, time

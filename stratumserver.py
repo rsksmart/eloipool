@@ -276,7 +276,7 @@ class StratumServer(networkserver.AsyncSocketServer):
 	def checkAuthentication(self, username, password):
 		return True
 	
-	def updateJobOnly(self, wantClear = False, forceClean = False):
+	def updateJobOnly(self, wantClear = False, forceClean = False, triggeredByRskGetWork = False):
 		self._JobId += 1
 		JobId = '%d_%d' % (time(), self._JobId)
 		(MC, wld) = self.getStratumJob(JobId, wantClear=wantClear)
@@ -302,7 +302,8 @@ class StratumServer(networkserver.AsyncSocketServer):
 		steps = list(b2a_hex(h).decode('ascii') for h in merkleTree._steps)
 
 		tim = int(time())
-		self.logger.info('ROOTSTOCK: getblocktemplate: {}, {}, {}'.format(merkleTree.start_time, merkleTree.finish_time, JobId))
+		if not triggeredByRskGetWork:
+			self.logger.info('ROOTSTOCK: getblocktemplate: {}, {}, {}'.format(merkleTree.start_time, merkleTree.finish_time, JobId))
 		self.JobBytes = json.dumps({
 			'id': None,
 			'method': 'mining.notify',
@@ -320,14 +321,14 @@ class StratumServer(networkserver.AsyncSocketServer):
 		}).encode('ascii') + b"\n"
 		self.JobId = JobId
 		
-	def updateJob(self, wantClear = False):
+	def updateJob(self, wantClear = False, triggeredByRskGetWork = False):
 		if self.UpdateTask:
 			try:
 				self.rmSchedule(self.UpdateTask)
 			except:
 				pass
 		
-		self.updateJobOnly(wantClear=wantClear)
+		self.updateJobOnly(wantClear=wantClear, triggeredByRskGetWork=triggeredByRskGetWork)
 		
 		self.WakeRequest = 1
 		self.wakeup()

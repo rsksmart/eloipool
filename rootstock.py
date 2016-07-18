@@ -115,7 +115,7 @@ class Rootstock(threading.Thread):
 			if (self.RootstockNotifyPolicy == 1 and notify) or (self.RootstockNotifyPolicy == 2 and self.parenthash != self.lastparenthash):
 				self.lastparenthash = self.parenthash
 				self.logger.info('Update miners work')
-				self.onBlockChange()
+				self.onBlockChange(triggeredByRskGetWork=True)
 
 	def getBlockInfo(self):
 		blockhash, target = self.blockhash, self.target
