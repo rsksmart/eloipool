@@ -609,7 +609,6 @@ def checkShare(share):
 		else:
 			share['upstreamRejectReason'] = None
 			share['upstreamResult'] = True
-		MM.updateBlock(blkhash)
 	
 	# Gotwork hack...
 	if gotwork and blkhashn <= config.GotWorkTarget:
