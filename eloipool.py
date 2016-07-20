@@ -143,11 +143,11 @@ DupeShareHACK = {}
 
 server = None
 stratumsrv = None
-def updateBlocks():
+def updateBlocks(rskLog = True):
 	server.wakeLongpoll()
-	stratumsrv.updateJob()
+	stratumsrv.updateJob(rskLog=rskLog)
 
-def blockChanged():
+def blockChanged(rskLog = True):
 	global MM, networkTarget, server
 	bits = MM.currentBlock[2]
 	if bits is None:
@@ -163,7 +163,7 @@ def blockChanged():
 		jsonrpc_getwork._CheckForDupesHACK = {}
 		workLog.clear()
 	server.wakeLongpoll(wantClear=True)
-	stratumsrv.updateJob(wantClear=True)
+	stratumsrv.updateJob(wantClear=True, rskLog=rskLog)
 
 
 from time import sleep, time
@@ -582,6 +582,7 @@ def checkShare(share):
 		else:
 			share['upstreamRejectReason'] = None
 			share['upstreamResult'] = True
+		MM.updateBlock(blkhash, rskLog=False)
 	
 	# Gotwork hack...
 	if gotwork and blkhashn <= config.GotWorkTarget:

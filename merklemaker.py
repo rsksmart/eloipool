@@ -168,7 +168,7 @@ class merkleMaker(threading.Thread):
 		cbtxn.assemble()
 		return MerkleTree([cbtxn])
 	
-	def updateBlock(self, newBlock, height = None, bits = None, _HBH = None):
+	def updateBlock(self, newBlock, height = None, bits = None, _HBH = None, rskLog = True):
 		if newBlock == self.currentBlock[0]:
 			if height in (None, self.currentBlock[1]) and bits in (None, self.currentBlock[2]):
 				return
@@ -182,7 +182,7 @@ class merkleMaker(threading.Thread):
 				))
 				if self.needMerkle == 1:
 					self.needMerkle = False
-				self.onBlockUpdate()
+				self.onBlockUpdate(rskLog=rskLog)
 		
 		# Old block is invalid
 		if self.currentBlock[0] != newBlock:
@@ -238,7 +238,7 @@ class merkleMaker(threading.Thread):
 				self.readyCV.notify_all()
 		
 		self.needMerkle = 2
-		self.onBlockChange()
+		self.onBlockChange(rskLog=rskLog)
 	
 	def _trimBlock(self, MP, txnlist, txninfo, floodn, msgf):
 		fee = txninfo[-1].get('fee', None)
