@@ -302,7 +302,9 @@ class StratumServer(networkserver.AsyncSocketServer):
 		steps = list(b2a_hex(h).decode('ascii') for h in merkleTree._steps)
 
 		tim = int(time())
-		if not triggeredByRskGetWork:
+		if triggeredByRskGetWork:
+			self.logger.info('ROOTSTOCK: getwork: notime, notime, {}'.format(JobId))
+		else:
 			self.logger.info('ROOTSTOCK: getblocktemplate: {}, {}, {}'.format(merkleTree.start_time, merkleTree.finish_time, JobId))
 		self.JobBytes = json.dumps({
 			'id': None,
