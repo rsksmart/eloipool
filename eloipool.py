@@ -1005,7 +1005,13 @@ if __name__ == "__main__":
 		config.StratumAddresses = ()
 	for a in config.StratumAddresses:
 		NetworkListener(stratumsrv, a)
-	
+
+	configLogger = logging.getLogger("ConfigLogger")
+	configFile = open("config.py", "r")
+	configLogger.info("ROOTSTOCK: config.py_log_start \n" + configFile.read())
+	configFile.close()
+	configLogger.info("ROOTSTOCK: config.py_log_complete")
+
 	MM.start()
 
 	rootstock.start()
