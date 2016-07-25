@@ -56,7 +56,7 @@ class LogFile:
         result = parse.parse("{}\t{}\t{}\t{}: {}: {}", line)
         if result is None or len(result.fixed) != 6 or result.fixed[3] != 'ROOTSTOCK':
             # Drop ill formed lines
-            print("Error: Failed to parse: |{}|".format(line), file=sys.stderr)
+            print("Error: Failed to parse: |{}|".format(line))
             return
         time = parse.parse("{:ti}", result.fixed[0].replace(",", ".")).fixed[0]
         operation = result.fixed[4]
@@ -66,7 +66,7 @@ class LogFile:
         if operation == 'json_rpc_call':
             rpc_call = parse.parse("{:x}, {}", data)
             if (rpc_call.fixed is None) or (len(rpc_call.fixed) != 2):
-                print("Error: Failed to parse: |{}|".format(line), file=sys.stderr)
+                print("Error: Failed to parse: |{}|".format(line))
                 return None
             call_id = rpc_call.fixed[0]
             call = rpc_call.fixed[1]
@@ -77,7 +77,7 @@ class LogFile:
         elif operation == 'json_rpc_reply':
             rpc_reply = parse.parse("{:x}, {}", data)
             if (rpc_reply.fixed is None) or (len(rpc_reply.fixed) != 2):
-                print("Error: Failed to parse: |{}|".format(line), file=sys.stderr)
+                print("Error: Failed to parse: |{}|".format(line))
                 return None
             call_id = rpc_reply.fixed[0]
             reply = rpc_reply.fixed[1]
@@ -105,7 +105,7 @@ class LogFile:
         elif operation == "parse_client_msg":
             client_message = parse.parse("{:d}, {}", data)
             if client_message is None:
-                print("Error: Failed to parse {}".format(data), file=sys.stderr)
+                print("Error: Failed to parse {}".format(data))
             client_id = client_message.fixed[0]
             message = client_message.fixed[1]
             self.process_operation('parse_client_msg', client_id, time, message)
@@ -117,6 +117,14 @@ class LogFile:
             finish_time = message.fixed[1]
             work_id = message.fixed[2]
             self.process_operation('getblocktemplate', work_id, start_time, '', finish_time)
+            return
+
+        elif operation == "getwork":
+            message = parse.parse("{}, {}, {}", data)
+            start_time = message.fixed[0]
+            finish_time = message.fixed[1]
+            work_id = message.fixed[2]
+            self.process_operation('getwork', work_id, start_time, '', finish_time)
             return
 
         elif operation == "blocksolve":
@@ -163,14 +171,15 @@ class LogFile:
             return
 
         elif operation == "submitBitcoinBlock":
-            message = parse.parse("{:ti}, {:ti}, {}", data)
+            message = parse.parse("{:ti}, {:ti}, {}, {}", data)
             start_time = message.fixed[0]
             finish_time = message.fixed[1]
-            blockhash = message.fixed[2]
-            self.process_operation('submitBitcoinBlock', blockhash, start_time, '', finish_time)
+            jobid = message.fixed[2]
+            nonce = message.fixed[3]
+            self.process_operation('submitBitcoinBlock', ":".join([jobid, nonce]), start_time, '', finish_time)
             return
 
-        print("Error: Failed to parse: |{}|".format(line), file=sys.stderr)
+        print("Error: Failed to parse: |{}|".format(line))
         raise ValueError("Unexpected line: {}".format(line))
 
     # Process individual operations and map them to a high livel operation
@@ -224,6 +233,12 @@ class LogFile:
             finish_time = args[0]
             self.log_action('getblocktemplate', time, delta_ms(time, finish_time), id)
 
+        elif operation == 'getwork':
+            finish_time = args[0]
+            self.log_action('getwork', time, 'notime', id)
+            # TODO: use line below when getwork includes time measurement
+            #self.log_action('getwork', time, 'delta_ms(time, finish_time), id)
+
         elif operation == 'blocksolve':
             """jobid, nonce, nonce2, blockhash = data
             if jobid in self.client_jobs and nonce in self.client_jobs[jobid]:
@@ -270,7 +285,7 @@ class LogFile:
 
         if method == 'getblocktemplate':
             if id in self.getblocktemplates:
-                print("Error: getblocktemplate alread received {} at {}".format(id, start), file=sys.stderr)
+                print("Error: getblocktemplate alread received {} at {}".format(id, start))
                 return
 
             if len(self.getblocktemplates) > 3:
@@ -292,17 +307,18 @@ class LogFile:
                         last_client_start = start
                 self.getblocktemplates[job_id] = prev_start, prev_duration, prev_id, prev_clients, last_client_start
             else:
+                pass
                 #pendings = self.notify_pending.setdefault(job_id, [])
                 #pendings += [(client_id, start)]
-                print("Error: mining.notify without getblocktemplate: {}, {}".format(start, id), file=sys.stderr)
-                raise ValueError("Error: mining.notify without getblocktemplate: {}, {}".format(start, id))
+                #print("Error: mining.notify without getblocktemplate: {}, {}".format(start, id), file=sys.stderr)
+                #raise ValueError("Error: mining.notify without getblocktemplate: {}, {}".format(start, id))
 
         elif method == 'submitblock':
             if id in self.submit_jobs:
                 sub_jobid, sub_time, sub_nonce, blockhash = self.submit_jobs[id]
                 self.print_summary("submitblock, {}, {}, {}, 1, {}".format(sub_time, delta_ms(sub_time, start), sub_jobid, duration))
             else:
-                print("Error: submitblock without valid job: {}, {}".format(id, start), file=sys.stderr)
+                print("Error: submitblock without valid job: {}, {}".format(id, start))
 
     def print_summary(self, message):
         if self.summary:
@@ -331,7 +347,7 @@ class LogFile:
             if 'method' not in call:
                 if 'result' in call:
                     return None
-                print("Error: Not valid json-rpc call: {}".format(data), file=sys.stderr)
+                print("Error: Not valid json-rpc call: {}".format(data))
                 return None
             return call['method']
         except json.decoder.JSONDecodeError as ex:
@@ -347,7 +363,7 @@ class LogFile:
                     return data[pos:end]
             if data[0:22] == '{"id":null,"params":["':
                 return "mining.notify"
-            print("Error: Not valid json-rpc call: {}".format(data), file=sys.stderr)
+            print("Error: Not valid json-rpc call: {}".format(data))
             raise ex
         except:
             raise
@@ -366,10 +382,10 @@ class LogFile:
                 end = data.find('"', pos)
                 if end >= 0 and end - pos == 16:
                     return data[pos:end]
-            print("Error: Failed to parse mining.notify: |{}|".format(data), file=sys.stderr)
+            print("Error: Failed to parse mining.notify: |{}|".format(data))
             raise ex
         except:
-            print("Error: Failed to parse mining.notify: |{}|".format(data), file=sys.stderr)
+            print("Error: Failed to parse mining.notify: |{}|".format(data))
             raise
 
     def submit_jobid(self, data):
