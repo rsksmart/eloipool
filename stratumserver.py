@@ -338,7 +338,7 @@ class StratumServer(networkserver.AsyncSocketServer):
 			self.WakeRequest = 2
 		self.wakeup()
 
-		self.UpdateTask = self.schedule(self.updateJob, time() + 55)
+		self.UpdateTask = self.schedule((lambda: self.updateJob(rskLog=False)), time() + 55)
 	
 	def doQuickUpdate(self):
 		PQU = self._PendingQuickUpdates
