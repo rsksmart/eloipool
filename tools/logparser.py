@@ -290,22 +290,25 @@ class LogFile:
 
             if len(self.getblocktemplates) > 3:
                 job_id = next(iter(self.getblocktemplates))
-                prev_start, prev_duration, prev_id, prev_clients, last_client_start = self.getblocktemplates[job_id]
+                prev_start, prev_duration, prev_id, prev_clients, first_client_start, last_client_start = self.getblocktemplates[job_id]
                 last_client = "{:.3f}".format(delta_ms(prev_start, last_client_start) - prev_duration) if len(prev_clients) > 0 else '--'
-                self.print_summary("getblocktemplate, {}, {}, {}, {}, {}".format(prev_start, prev_duration, prev_id, len(prev_clients), last_client))
+                delta_first_last_client = "{:.3f}".format(delta_ms(first_client_start, last_client_start)) if len(prev_clients) > 0 else '--'
+                self.print_summary("getblocktemplate, {}, {}, {}, {}, {}, {}".format(prev_start, prev_duration, prev_id, len(prev_clients), last_client, delta_first_last_client))
                 del self.getblocktemplates[job_id]
 
-            self.getblocktemplates[id] = start, duration, id, {}, None
+            self.getblocktemplates[id] = start, duration, id, {}, None, None
 
         elif method == 'mining.notify':
             [job_id, client_id] = id.split(":")
             if job_id in self.getblocktemplates:
-                prev_start, prev_duration, prev_id, prev_clients, last_client_start = self.getblocktemplates[job_id]
+                prev_start, prev_duration, prev_id, prev_clients, first_client_start, last_client_start = self.getblocktemplates[job_id]
                 if client_id not in prev_clients:
                     prev_clients[client_id] = start
                     if last_client_start is None or delta_ms(last_client_start, start) <= args.max_notify_delta:
                         last_client_start = start
-                self.getblocktemplates[job_id] = prev_start, prev_duration, prev_id, prev_clients, last_client_start
+                    if first_client_start is None:
+                        first_client_start = start
+                self.getblocktemplates[job_id] = prev_start, prev_duration, prev_id, prev_clients, first_client_start, last_client_start
             else:
                 pass
                 #pendings = self.notify_pending.setdefault(job_id, [])
@@ -326,9 +329,10 @@ class LogFile:
 
     def flush_info(self):
         for job_id, data in self.getblocktemplates.items():
-            prev_start, prev_duration, prev_id, prev_clients, last_client_start = data
+            prev_start, prev_duration, prev_id, prev_clients, first_client_start, last_client_start = data
             last_client = "{:.3f}".format(delta_ms(prev_start, last_client_start) - prev_duration) if len(prev_clients) > 0 else '--'
-            self.print_summary("getblocktemplate, {}, {}, {}, {}, {}".format(prev_start, prev_duration, prev_id, len(prev_clients), last_client))
+            delta_first_last_client = "{:.3f}".format(delta_ms(first_client_start, last_client_start)) if len(prev_clients) > 0 else '--'
+            self.print_summary("getblocktemplate, {}, {}, {}, {}, {}, {}".format(prev_start, prev_duration, prev_id, len(prev_clients), last_client, delta_first_last_client))
 
         self.getblocktemplates = odict()
 
