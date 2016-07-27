@@ -138,7 +138,7 @@ class StratumHandler(networkserver.SocketHandler):
 			})
 		self.LicenseSent = True
 	
-	def sendJob(self):
+	def sendJob(self, rskLog = True):
 		target = self.server.defaultTarget
 		if len(self.Usernames) == 1:
 			dtarget = self.server.getTarget(next(iter(self.Usernames)), time())
@@ -155,9 +155,11 @@ class StratumHandler(networkserver.SocketHandler):
 			})
 			self.lastBDiff = bdiff
 		message = self.server.JobBytes.decode('utf-8') if hasattr(self.server, 'JobBytes') and self.server.JobBytes is not None else '{}'
-		self.logger.info("ROOTSTOCK: send_client_send: {}, {:X}, {}".format(id(self), id(bdiff), message))
+		if rskLog:
+			self.logger.info("ROOTSTOCK: send_client_send: {}, {:X}, {}".format(id(self), id(bdiff), message))
 		self.push(self.server.JobBytes)
-		self.logger.info("ROOTSTOCK: send_client_complete: {}, {:X}".format(id(self), id(bdiff)))
+		if rskLog:
+			self.logger.info("ROOTSTOCK: send_client_complete: {}, {:X}".format(id(self), id(bdiff)))
 		if len(self.JobTargets) > 4:
 			self.JobTargets.popitem(False)
 		self.JobTargets[self.server.JobId] = target
@@ -276,7 +278,7 @@ class StratumServer(networkserver.AsyncSocketServer):
 	def checkAuthentication(self, username, password):
 		return True
 	
-	def updateJobOnly(self, wantClear = False, forceClean = False, triggeredByRskGetWork = False):
+	def updateJobOnly(self, wantClear = False, forceClean = False, triggeredByRskGetWork = False, rskLog = True):
 		self._JobId += 1
 		JobId = '%d_%d' % (time(), self._JobId)
 		(MC, wld) = self.getStratumJob(JobId, wantClear=wantClear)
@@ -302,10 +304,11 @@ class StratumServer(networkserver.AsyncSocketServer):
 		steps = list(b2a_hex(h).decode('ascii') for h in merkleTree._steps)
 
 		tim = int(time())
-		if triggeredByRskGetWork:
-			self.logger.info('ROOTSTOCK: getwork: notime, notime, {}'.format(JobId))
-		else:
-			self.logger.info('ROOTSTOCK: getblocktemplate: {}, {}, {}'.format(merkleTree.start_time, merkleTree.finish_time, JobId))
+		if rskLog:
+			if triggeredByRskGetWork:
+				self.logger.info('ROOTSTOCK: getwork: notime, notime, {}'.format(JobId))
+			else:
+				self.logger.info('ROOTSTOCK: getblocktemplate: {}, {}, {}'.format(merkleTree.start_time, merkleTree.finish_time, JobId))
 		self.JobBytes = json.dumps({
 			'id': None,
 			'method': 'mining.notify',
@@ -323,7 +326,7 @@ class StratumServer(networkserver.AsyncSocketServer):
 		}).encode('ascii') + b"\n"
 		self.JobId = JobId
 		
-	def updateJob(self, wantClear = False, triggeredByRskGetWork = False):
+	def updateJob(self, wantClear = False, triggeredByRskGetWork = False, rskLog = True):
 		if self.UpdateTask:
 			try:
 				self.rmSchedule(self.UpdateTask)
@@ -331,11 +334,14 @@ class StratumServer(networkserver.AsyncSocketServer):
 				pass
 		
 		self.updateJobOnly(wantClear=wantClear, triggeredByRskGetWork=triggeredByRskGetWork)
-		
-		self.WakeRequest = 1
+
+		if rskLog:
+			self.WakeRequest = 1
+		else:
+			self.WakeRequest = 2
 		self.wakeup()
 		
-		self.UpdateTask = self.schedule(self.updateJob, time() + 55)
+		self.UpdateTask = self.schedule(lambda: self.updateJob(triggeredByRskGetWork=triggeredByRskGetWork, rskLog=False), time() + 55)
 	
 	def doQuickUpdate(self):
 		PQU = self._PendingQuickUpdates
@@ -361,10 +367,13 @@ class StratumServer(networkserver.AsyncSocketServer):
 		self.schedule(self.doQuickUpdate, time())
 	
 	def pre_schedule(self):
-		if self.WakeRequest:
-			self._wakeNodes()
+		if self.WakeRequest == 1:
+			self._wakeNodes(True)
+		if self.WakeRequest == 2:
+			self._wakeNodes(False)
+
 	
-	def _wakeNodes(self):
+	def _wakeNodes(self, rskLog):
 		self.WakeRequest = None
 		C = self._Clients
 		if not C:
@@ -377,7 +386,7 @@ class StratumServer(networkserver.AsyncSocketServer):
 		
 		for ic in list(C.values()):
 			try:
-				ic.sendJob()
+				ic.sendJob(rskLog)
 			except socket.error:
 				OC -= 1
 				# Ignore socket errors; let the main event loop take care of them later
