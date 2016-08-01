@@ -29,6 +29,8 @@ class LogFile:
         self.client_jobs = {}       # jobs received from clients
         self.submit_jobs = {}       # jobs sent to bitcoind
         self.logtype = logtype
+        self.readingConfigFile = False
+        self.configFile = ''
 
     def parse(self):
         """Parse log file"""
@@ -49,12 +51,21 @@ class LogFile:
 
     def parseline(self, line):
         pos = line.find("ROOTSTOCK:")
-        if pos < 0: # Ignore lines that were not logged by us
+        if pos < 0 and not self.readingConfigFile: # Ignore lines that were not logged by us
+            return
+
+        if pos > 0 and self.readingConfigFile and 'config.py_log_complete' in line:
+            self.readingConfigFile = False
+            with open("config.py", "w") as configPy:
+                configPy.write(self.configFile)
+            return
+        elif self.readingConfigFile:
+            self.configFile += line
             return
 
         # Log line format is time\tModule\tLevel\tROOTSTOCK: <operation>: <data>
         result = parse.parse("{}\t{}\t{}\t{}: {}: {}", line)
-        if result is None or len(result.fixed) != 6 or result.fixed[3] != 'ROOTSTOCK':
+        if (result is None or len(result.fixed) != 6 or result.fixed[3] != 'ROOTSTOCK') and not self.readingConfigFile:
             # Drop ill formed lines
             print("Error: Failed to parse: |{}|".format(line))
             return
@@ -63,6 +74,12 @@ class LogFile:
         data = result.fixed[5]
 
         # Interpret logged operations
+        if operation.startswith('config.py_log_start'):
+            self.configFile += operation[operation.index('#'):]
+            self.configFile += data
+            self.readingConfigFile = True
+            return
+
         if operation == 'json_rpc_call':
             rpc_call = parse.parse("{:x}, {}", data)
             if (rpc_call.fixed is None) or (len(rpc_call.fixed) != 2):
