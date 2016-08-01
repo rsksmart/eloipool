@@ -12,3 +12,6 @@ midstate.so
 *.rej
 eloipool.worklog
 bitcoinrpc
+.idea
+python-bitcoinrpc
+share-logfile

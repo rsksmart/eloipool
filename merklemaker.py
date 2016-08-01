@@ -675,7 +675,7 @@ class merkleMaker(threading.Thread):
 		
 		# Nothing left to do, fire onBlockUpdate event (if appropriate) and sleep
 		if self.needMerkle == 1:
-			self.onBlockUpdate()
+			self.onBlockUpdate(rskLog=False)
 			self.needMerkle = False
 		self._doing('idle')
 		# TODO: rather than sleepspin, block until MinimumTxnUpdateWait expires or threading.Condition(?)
