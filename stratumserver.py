@@ -333,7 +333,7 @@ class StratumServer(networkserver.AsyncSocketServer):
 			except:
 				pass
 		
-		self.updateJobOnly(wantClear=wantClear, triggeredByRskGetWork=triggeredByRskGetWork)
+		self.updateJobOnly(wantClear=wantClear, triggeredByRskGetWork=triggeredByRskGetWork, rskLog=rskLog)
 
 		if rskLog:
 			self.WakeRequest = 1

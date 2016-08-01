@@ -14,3 +14,5 @@ eloipool.worklog
 bitcoinrpc
 eloipool.log
 .idea
+python-bitcoinrpc
+share-logfile

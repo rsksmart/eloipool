@@ -146,9 +146,9 @@ DupeShareHACK = {}
 
 server = None
 stratumsrv = None
-def updateBlocks():
+def updateBlocks(rskLog = True):
 	server.wakeLongpoll()
-	stratumsrv.updateJob()
+	stratumsrv.updateJob(rskLog=rskLog)
 
 def blockChanged(triggeredByRskGetWork = False):
 	global MM, networkTarget, server
