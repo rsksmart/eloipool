@@ -146,9 +146,9 @@ DupeShareHACK = {}
 
 server = None
 stratumsrv = None
-def updateBlocks(rskLog = True):
+def updateBlocks():
 	server.wakeLongpoll()
-	stratumsrv.updateJob(rskLog=rskLog)
+	stratumsrv.updateJob()
 
 def blockChanged(triggeredByRskGetWork = False):
 	global MM, networkTarget, server
@@ -349,6 +349,12 @@ def getStratumJob(jobid, wantClear = False):
 	now = time()
 	workLog.setdefault(None, {})[jobid] = (MC, now)
 	return (MC, workLog[None][jobid])
+
+def getLogGbtCall():
+	return MM.getLogGbtCall()
+
+def setLogGbtCall(logGbtCall):
+	MM.setLogGbtCall(logGbtCall)
 
 def getExistingStratumJob(jobid):
 	wld = workLog[None][jobid]
@@ -948,7 +954,7 @@ if __name__ == "__main__":
 			authenticators.append(lo)
 		except:
 			logging.getLogger('authentication').error("Error setting up authentication module %s: %s", name, sys.exc_info())
-	
+
 	LSbc = []
 	if not hasattr(config, 'BitcoinNodeAddresses'):
 		config.BitcoinNodeAddresses = ()
@@ -990,6 +996,8 @@ if __name__ == "__main__":
 	
 	stratumsrv = StratumServer()
 	stratumsrv.getStratumJob = getStratumJob
+	stratumsrv.setLogGbtCall = setLogGbtCall
+	stratumsrv.getLogGbtCall = getLogGbtCall
 	stratumsrv.getExistingStratumJob = getExistingStratumJob
 	stratumsrv.receiveShare = receiveShare
 	stratumsrv.RaiseRedFlags = RaiseRedFlags

@@ -307,8 +307,8 @@ class StratumServer(networkserver.AsyncSocketServer):
 		if rskLog:
 			if triggeredByRskGetWork:
 				self.logger.info('ROOTSTOCK: getwork: notime, notime, {}'.format(JobId))
-			else:
-				self.logger.info('ROOTSTOCK: getblocktemplate: {}, {}, {}'.format(merkleTree.start_time, merkleTree.finish_time, JobId))
+			elif self.getLogGbtCall():
+					self.logger.info('ROOTSTOCK: getblocktemplate: {}, {}, {}'.format(merkleTree.start_time, merkleTree.finish_time, JobId))
 		self.JobBytes = json.dumps({
 			'id': None,
 			'method': 'mining.notify',
@@ -333,10 +333,11 @@ class StratumServer(networkserver.AsyncSocketServer):
 			except:
 				pass
 		
-		self.updateJobOnly(wantClear=wantClear, triggeredByRskGetWork=triggeredByRskGetWork, rskLog=rskLog)
+		self.updateJobOnly(wantClear=wantClear, triggeredByRskGetWork=triggeredByRskGetWork)
 
-		if rskLog:
+		if rskLog and self.getLogGbtCall():
 			self.WakeRequest = 1
+			self.setLogGbtCall(False)
 		else:
 			self.WakeRequest = 2
 		self.wakeup()
