@@ -283,7 +283,7 @@ class StratumServer(networkserver.AsyncSocketServer):
 		JobId = '%d_%d' % (time(), self._JobId)
 		(MC, wld) = self.getStratumJob(JobId, wantClear=wantClear)
 		(height, merkleTree, cb, prevBlock, bits) = MC[:5]
-		
+
 		if len(cb) > 96 - len(self.extranonce1null) - 4:
 			if not self.rejecting:
 				self.logger.warning('Coinbase too big for stratum: disabling')
@@ -304,7 +304,7 @@ class StratumServer(networkserver.AsyncSocketServer):
 		steps = list(b2a_hex(h).decode('ascii') for h in merkleTree._steps)
 
 		tim = int(time())
-		if rskLog:
+		if rskLog and self.getLogGbtCall():
 			self.logger.info('ROOTSTOCK: getblocktemplate: {}, {}, {}'.format(merkleTree.start_time, merkleTree.finish_time, JobId))
 		self.JobBytes = json.dumps({
 			'id': None,
@@ -332,8 +332,9 @@ class StratumServer(networkserver.AsyncSocketServer):
 		
 		self.updateJobOnly(wantClear=wantClear, rskLog=rskLog)
 
-		if rskLog:
+		if rskLog and self.getLogGbtCall():
 			self.WakeRequest = 1
+			self.setLogGbtCall(False)
 		else:
 			self.WakeRequest = 2
 		self.wakeup()

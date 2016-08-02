@@ -474,6 +474,7 @@ class merkleMaker(threading.Thread):
 		MP = self._CallGBT(TS)
 		finish_time = datetime.now()
 		self.start_time, self.finish_time = start_time, finish_time
+		self.logGbtCall = True
 		#self.logger.error('ROOTSTOCK: CallGBT: {}, {}, {}'.format(start_time, finish_time, MP))
 
 		newMerkleTree = self._ProcessGBT(MP, TS)
@@ -675,7 +676,7 @@ class merkleMaker(threading.Thread):
 		
 		# Nothing left to do, fire onBlockUpdate event (if appropriate) and sleep
 		if self.needMerkle == 1:
-			self.onBlockUpdate(rskLog=False)
+			self.onBlockUpdate()
 			self.needMerkle = False
 		self._doing('idle')
 		# TODO: rather than sleepspin, block until MinimumTxnUpdateWait expires or threading.Condition(?)
@@ -732,6 +733,12 @@ class merkleMaker(threading.Thread):
 		rollPrevBlk = (mt == self.curClearMerkleTree)
 		mt.start_time, mt.finish_time = self.start_time, self.finish_time
 		return (height, mt, cb, prevBlock, bits, rollPrevBlk)
+
+	def getLogGbtCall(self):
+		return self.logGbtCall
+
+	def setLogGbtCall(self, logGbtCall):
+		self.logGbtCall = logGbtCall
 
 # merkleMaker tests
 def _test():

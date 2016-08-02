@@ -347,6 +347,12 @@ def getStratumJob(jobid, wantClear = False):
 	workLog.setdefault(None, {})[jobid] = (MC, now)
 	return (MC, workLog[None][jobid])
 
+def getLogGbtCall():
+	return MM.getLogGbtCall()
+
+def setLogGbtCall(logGbtCall):
+	MM.setLogGbtCall(logGbtCall)
+
 def getExistingStratumJob(jobid):
 	wld = workLog[None][jobid]
 	return (wld[0], wld)
@@ -955,6 +961,8 @@ if __name__ == "__main__":
 	
 	stratumsrv = StratumServer()
 	stratumsrv.getStratumJob = getStratumJob
+	stratumsrv.setLogGbtCall = setLogGbtCall
+	stratumsrv.getLogGbtCall = getLogGbtCall
 	stratumsrv.getExistingStratumJob = getExistingStratumJob
 	stratumsrv.receiveShare = receiveShare
 	stratumsrv.RaiseRedFlags = RaiseRedFlags
