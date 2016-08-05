@@ -274,6 +274,7 @@ class StratumServer(networkserver.AsyncSocketServer):
 		self.WakeRequest = None
 		self.UpdateTask = None
 		self._PendingQuickUpdates = set()
+		self.sendingGbtNotification = False
 	
 	def checkAuthentication(self, username, password):
 		return True
@@ -327,6 +328,13 @@ class StratumServer(networkserver.AsyncSocketServer):
 		self.JobId = JobId
 		
 	def updateJob(self, wantClear = False, triggeredByRskGetWork = False, rskLog = True):
+		# GBT update should not be interrupted by RSK getWork update
+		if self.sendingGbtNotification and triggeredByRskGetWork:
+			return
+
+		# if method is not invoked from a RSK block change, then it must have been a GBT update
+		self.sendingGbtNotification = not triggeredByRskGetWork
+
 		if self.UpdateTask:
 			try:
 				self.rmSchedule(self.UpdateTask)
@@ -394,7 +402,9 @@ class StratumServer(networkserver.AsyncSocketServer):
 			except:
 				OC -= 1
 				self.logger.debug('Error sending new job:\n' + traceback.format_exc())
-		
+		# if miners' notification is finished, no notification is been done (no matter who triggered it, BTC or RSK)
+		self.sendingGbtNotification = False
+
 		self.logger.debug('New job sent to %d clients in %.3f seconds' % (OC, time() - now))
 	
 	def getTarget(*a, **ka):
