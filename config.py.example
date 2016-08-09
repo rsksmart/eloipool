@@ -280,7 +280,7 @@ LogFile = {
 SubsidyAlgo = lambda height: 5000000000 >> (height // 210000)
 
 # Use in development mode only
-DEV_MODE_ON = True
+DEV_MODE_ON = False
 # Difficulty value that will be send to the miners
 MINER_DIFF = 0.005
 # Difficulty value that will be used in block submission to RSK or BTC
