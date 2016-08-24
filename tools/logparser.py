@@ -22,6 +22,7 @@ class LogFile:
     def __init__(self, filename, output, summary, logtype):
         self.filename = filename
         self.output = open(output, "w+") if output else None
+        self.error_output = open("error.log", "w+") if "error.log" else None
         self.summary = summary
         self.getblocktemplates = odict()
         self.server_calls = {}      # calls to bitcoind / rskd
@@ -292,6 +293,10 @@ class LogFile:
             finish_time = args[0]
             self.log_action('submitBitcoinBlock', time, delta_ms(time, finish_time), id)
 
+    def log_error(self, exception, errorMessage):
+        if self.error_output:
+            self.error_output.write(errorMessage + "\n")
+
     def log_action(self, method, start, duration, id=None):
         self.process_action(method, start, duration, id)
 
@@ -384,8 +389,10 @@ class LogFile:
                     return data[pos:end]
             if data[0:22] == '{"id":null,"params":["':
                 return "mining.notify"
-            print("Error: Not valid json-rpc call: {}".format(data))
-            raise ex
+
+            self.log_error(ex, "Error: Not recognized json-rpc call: {}".format(data))
+            return None
+
         except:
             raise
 
