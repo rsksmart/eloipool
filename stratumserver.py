@@ -146,13 +146,16 @@ class StratumHandler(networkserver.SocketHandler):
 				target = dtarget
 		bdiff = target2bdiff(target)
 		if self.lastBDiff != bdiff:
-			self.sendReply({
+			setDifficultyMessage = {
 				'id': None,
 				'method': 'mining.set_difficulty',
 				'params': [
 					bdiff
 				],
-			})
+			}
+			self.logger.info("ROOTSTOCK: send_client_send: {}, {:X}, {}".format(id(self), id(bdiff), json.dumps(setDifficultyMessage)))
+			self.sendReply(setDifficultyMessage)
+			self.logger.info("ROOTSTOCK: send_client_complete: {}, {:X}".format(id(self), id(bdiff)))
 			self.lastBDiff = bdiff
 		message = self.server.JobBytes.decode('utf-8') if hasattr(self.server, 'JobBytes') and self.server.JobBytes is not None else '{}'
 		if rskLog:
