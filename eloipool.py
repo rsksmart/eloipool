@@ -150,7 +150,7 @@ def updateBlocks():
 	server.wakeLongpoll()
 	stratumsrv.updateJob()
 
-def blockChanged(triggeredByRskGetWork = False):
+def blockChanged(triggeredByRskGetWork = False, cleanJobs = False):
 	global MM, networkTarget, server
 	bits = MM.currentBlock[2]
 	if bits is None:
@@ -160,7 +160,7 @@ def blockChanged(triggeredByRskGetWork = False):
 			networkTarget = bdiff2target(config.BTC_ELOIPOOL_DIFF)
 		else:
 			networkTarget = Bits2Target(bits)
-	if MM.lastBlock != (None, None, None):
+	if (MM.lastBlock != (None, None, None) and not triggeredByRskGetWork) or (triggeredByRskGetWork and cleanJobs):
 		global DupeShareHACK
 		DupeShareHACK = {}
 		jsonrpc_getwork._CheckForDupesHACK = {}

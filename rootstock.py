@@ -112,10 +112,17 @@ class Rootstock(threading.Thread):
 		if self.blockhash != blockhash:
 			self.blockhash, self.notify, self.minerfees, self.target, self.parenthash = blockhash, notify, minerfees, target, parenthash
 			self.logger.info('New block hash {0} {1:X}'.format(b2a_hex(self.blockhash).decode('utf8'), target))
-			if (self.RootstockNotifyPolicy == 1 and notify) or (self.RootstockNotifyPolicy == 2 and self.parenthash != self.lastparenthash):
+			if (self._triggerRSKupdate(notify)):
 				self.lastparenthash = self.parenthash
 				self.logger.info('Update miners work')
-				self.onBlockChange(triggeredByRskGetWork=True)
+				cleanJobs = self.RootstockNotifyPolicy == 3 or self.RootstockNotifyPolicy == 4
+				self.onBlockChange(triggeredByRskGetWork=True, cleanJobs=cleanJobs)
+
+	def _triggerRSKupdate(self, notify):
+		notifyFlagUpdate = (self.RootstockNotifyPolicy == 1 or self.RootstockNotifyPolicy == 3) and notify
+		differentBlockHashUpdate = (self.RootstockNotifyPolicy == 2 or self.RootstockNotifyPolicy == 4) and self.parenthash != self.lastparenthash
+
+		return notifyFlagUpdate or differentBlockHashUpdate;
 
 	def getBlockInfo(self):
 		blockhash, target = self.blockhash, self.target
