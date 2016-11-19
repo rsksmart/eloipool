@@ -8,7 +8,7 @@ from datetime import datetime
 from binascii import b2a_hex
 from binascii import unhexlify
 from time import sleep
-from util import bdiff2target
+from util import *
 
 class Rootstock(threading.Thread):
 	def __init__(self, *a, **k):
@@ -93,6 +93,7 @@ class Rootstock(threading.Thread):
 				RSPriList.append(RS)
 				try:
 					r = self._callGetWorkFrom(RS)
+					self.logger.info('ROOTSTOCK_DEBUG: CallGW: {0}'.format(r))
 					if r is None:
 						continue
 					return r

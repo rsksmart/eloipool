@@ -582,7 +582,9 @@ def checkShare(share):
 			rootstockTarget = workMerkleTree.rootstockBlockInfo[1]
 
 	submitRootstock = rootstockTarget is not None and blkhashn <= rootstockTarget
+	checkShare.logger.info("ROOTSTOCK_DEBUG: RSKValidShare: {0} {1} {2}".format(blkhashn, rootstockTarget, submitRootstock))
 	submitBitcoin = blkhashn <= networkTarget
+	checkShare.logger.info("ROOTSTOCK_DEBUG: BTCValidShare: {0} {1} {2}".format(blkhashn, networkTarget, submitBitcoin))
 
 	if submitBitcoin or submitRootstock:
 		if submitBitcoin:
