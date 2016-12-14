@@ -102,7 +102,7 @@ from time import time
 
 def makeCoinbaseTxn(coinbaseValue, useCoinbaser = True, prevBlockHex = None, rsk_blockhash = None):
 	txn = Txn.new()
-	
+
 	if useCoinbaser and hasattr(config, 'CoinbaserCmd') and config.CoinbaserCmd:
 		coinbased = 0
 		try:
@@ -124,13 +124,13 @@ def makeCoinbaseTxn(coinbaseValue, useCoinbaser = True, prevBlockHex = None, rsk
 			txn.outputs = []
 		else:
 			coinbaseValue -= coinbased
-	
+
 	pkScript = BitcoinScript.toAddress(config.TrackerAddr)
 	txn.addOutput(coinbaseValue, pkScript)
 
 	if rsk_blockhash is not None:
-		txn.addOutput(0, b'\x52\x53\x4B\x42\x4C\x4F\x43\x4B\x3A' + rsk_blockhash)
-	
+		txn.addOutput(0, rootstock.getRSKTag() + rsk_blockhash)
+
 	# TODO
 	# TODO: red flag on dupe coinbase
 	return txn
@@ -166,7 +166,9 @@ def blockChanged(triggeredByRskGetWork = False, cleanJobs = False):
 		jsonrpc_getwork._CheckForDupesHACK = {}
 		workLog.clear()
 	server.wakeLongpoll(wantClear=True)
-	stratumsrv.updateJob(wantClear=True, triggeredByRskGetWork=triggeredByRskGetWork)
+	# wantClear is False when the caller is RSK because only the RSK block hash needs to be changed on the coinbase
+	# and there is no need to generate a new merkle tree
+	stratumsrv.updateJob(wantClear=not triggeredByRskGetWork, triggeredByRskGetWork=triggeredByRskGetWork)
 
 
 from time import sleep, time
@@ -529,11 +531,11 @@ def checkShare(share):
 		othertxndata = b''
 		if None not in workLog:
 			# We haven't yet sent any stratum work for this block
-			raise RejectedShare('unknown-work')
+			raise RejectedShare('unknown-work: work never sent')
 		MWL = workLog[None]
 	
 	if wli not in MWL:
-		raise RejectedShare('unknown-work')
+		raise RejectedShare('unknown-work: work not found in works dictionary')
 	(wld, issueT) = MWL[wli]
 	share[mode] = wld
 	
@@ -582,9 +584,7 @@ def checkShare(share):
 			rootstockTarget = workMerkleTree.rootstockBlockInfo[1]
 
 	submitRootstock = rootstockTarget is not None and blkhashn <= rootstockTarget
-	checkShare.logger.info("ROOTSTOCK_DEBUG: RSKValidShare: {0} {1} {2}".format(blkhashn, rootstockTarget, submitRootstock))
 	submitBitcoin = blkhashn <= networkTarget
-	checkShare.logger.info("ROOTSTOCK_DEBUG: BTCValidShare: {0} {1} {2}".format(blkhashn, networkTarget, submitBitcoin))
 
 	if submitBitcoin or submitRootstock:
 		if submitBitcoin:
@@ -718,9 +718,11 @@ def receiveShare(share):
 		checkShare(share)
 	except RejectedShare as rej:
 		share['rejectReason'] = str(rej)
+		checkShare.logger.error(str(rej))
 		raise
 	except BaseException as e:
 		share['rejectReason'] = 'ERROR'
+		checkShare.logger.error(str(e))
 		raise
 	finally:
 		checkShare.logger.info("ROOTSTOCK: solution: {}, {}, {}, {}".format(share['jobid'], b2a_hex(share['nonce']).decode('ascii'),

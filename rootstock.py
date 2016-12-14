@@ -93,7 +93,6 @@ class Rootstock(threading.Thread):
 				RSPriList.append(RS)
 				try:
 					r = self._callGetWorkFrom(RS)
-					self.logger.info('ROOTSTOCK_DEBUG: CallGW: {0}'.format(r))
 					if r is None:
 						continue
 					return r
@@ -117,6 +116,7 @@ class Rootstock(threading.Thread):
 				self.lastparenthash = self.parenthash
 				self.logger.info('Update miners work')
 				cleanJobs = self.RootstockNotifyPolicy == 3 or self.RootstockNotifyPolicy == 4
+				self.MM.updateRSKBlockHashOnCoinbaseTxn(blockhash)
 				self.onBlockChange(triggeredByRskGetWork=True, cleanJobs=cleanJobs)
 
 	def _triggerRSKupdate(self, notify):
@@ -130,6 +130,9 @@ class Rootstock(threading.Thread):
 		if blockhash is None:
 			return None, None
 		return blockhash, target
+
+	def getRSKTag(self):
+		return b'\x52\x53\x4B\x42\x4C\x4F\x43\x4B\x3A'
 
 def rootstockSubmissionThread(payload, blkhash, share):
 	servers = list(a for b in rootstockSubmissionThread.rootstock.RootstockSources for a in b)

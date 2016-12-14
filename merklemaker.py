@@ -50,6 +50,7 @@ def assembleBlock(blkhdr, txlist):
 	return payload
 
 class merkleMaker(threading.Thread):
+
 	GBTCaps = [
 		'coinbasevalue',
 		'coinbase/append',
@@ -377,6 +378,7 @@ class merkleMaker(threading.Thread):
 		self._makeBlockSafe(MP, txnlist, txninfo)
 
 		blockInfo = (None, None)
+
 		if hasattr(self, 'Rootstock') and self.Rootstock is not None:
 			blockInfo = self.Rootstock.getBlockInfo()
 
@@ -488,8 +490,6 @@ class merkleMaker(threading.Thread):
 		finish_time = datetime.now()
 		self.start_time, self.finish_time = start_time, finish_time
 		self.logGbtCall = True
-		self.logger.error('ROOTSTOCK_DEBUG: CallGBT: {}, {}, {}'.format(start_time, finish_time, MP))
-
 		newMerkleTree = self._ProcessGBT(MP, TS)
 
 		# Some versions of bitcoinrpc ServiceProxy have problems copying/pickling, so just store name and URI for now
@@ -741,7 +741,7 @@ class merkleMaker(threading.Thread):
 				while not self.ready:
 					self.readyCV.wait()
 		(prevBlock, height, bits) = self.currentBlock
-		mt = self.curClearMerkleTree if wantClear else self.currentMerkleTree
+		mt = self.curClearMerkleTree if wantClear else deepcopy(self.currentMerkleTree)
 		cb = self.makeCoinbase(height=height)
 		rollPrevBlk = (mt == self.curClearMerkleTree)
 		mt.start_time, mt.finish_time = self.start_time, self.finish_time
@@ -752,6 +752,11 @@ class merkleMaker(threading.Thread):
 
 	def setLogGbtCall(self, logGbtCall):
 		self.logGbtCall = logGbtCall
+
+	def updateRSKBlockHashOnCoinbaseTxn(self, blockhash):
+		if self.currentMerkleTree is not None:
+			self.currentMerkleTree.data[0].outputs = self.currentMerkleTree.data[0].outputs[:-1]
+			self.currentMerkleTree.data[0].addOutput(0, self.Rootstock.getRSKTag() + blockhash)
 
 # merkleMaker tests
 def _test():

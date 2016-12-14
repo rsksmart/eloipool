@@ -29,6 +29,7 @@ from util import RejectedShare, swap32, target2bdiff, UniqueSessionIdManager
 
 extranonce2sz = 4
 sendingGbtNotification = False
+lastReceivedShareTime = None
 
 class StratumError(BaseException):
 	def __init__(self, errno, msg, tb = True):
@@ -209,8 +210,19 @@ class StratumHandler(networkserver.SocketHandler):
 		except:
 			pass
 		super().close()
-	
+
 	def _stratum_mining_submit(self, username, jobid, extranonce2, ntime, nonce):
+		# global lastReceivedShareTime
+        #
+		# if lastReceivedShareTime is None:
+		# 	lastReceivedShareTime = int(round(time() * 1000))
+		# lastReceivedShareTimeNow = int(round(time() * 1000))
+        #
+		# if lastReceivedShareTimeNow - lastReceivedShareTime < 1000:
+		# 	return
+        #
+		# lastReceivedShareTime = lastReceivedShareTimeNow
+
 		if username not in self.Usernames:
 			raise StratumError(24, 'unauthorized-user', False)
 		share = {
@@ -332,6 +344,7 @@ class StratumServer(networkserver.AsyncSocketServer):
 		
 	def updateJob(self, wantClear = False, triggeredByRskGetWork = False, rskLog = True):
 		global sendingGbtNotification
+
 		# GBT update should not be interrupted by RSK getWork update
 		if sendingGbtNotification and triggeredByRskGetWork:
 			return
