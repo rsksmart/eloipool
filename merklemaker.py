@@ -490,6 +490,9 @@ class merkleMaker(threading.Thread):
 		finish_time = datetime.now()
 		self.start_time, self.finish_time = start_time, finish_time
 		self.logGbtCall = True
+
+		#self.logger.error('ROOTSTOCK_DEBUG: CallGBT: {}, {}, {}'.format(start_time, finish_time, MP))
+
 		newMerkleTree = self._ProcessGBT(MP, TS)
 
 		# Some versions of bitcoinrpc ServiceProxy have problems copying/pickling, so just store name and URI for now

@@ -490,7 +490,13 @@ def IsJobValid(wli, wluser = None):
 		return False
 	return True
 
+rskLastReceivedShareTime = None
+rskSubmittedShares = None
+
 def checkShare(share):
+	global rskLastReceivedShareTime
+	global rskSubmittedShares
+
 	shareTime = share['time'] = time()
 	
 	username = share['username']
@@ -584,7 +590,24 @@ def checkShare(share):
 			rootstockTarget = workMerkleTree.rootstockBlockInfo[1]
 
 	submitRootstock = rootstockTarget is not None and blkhashn <= rootstockTarget
+
+	if rskLastReceivedShareTime is None:
+		rskLastReceivedShareTime = int(round(time() * 1000))
+		rskSubmittedShares = 0
+	lastReceivedShareTimeNow = int(round(time() * 1000))
+
+	if lastReceivedShareTimeNow - rskLastReceivedShareTime >= 1000:
+		rskSubmittedShares = 0
+		rskLastReceivedShareTime = lastReceivedShareTimeNow
+
+	checkShare.logger.info("ROOTSTOCK_DEBUG: RSKValidShare: {0} {1} {2}".format(blkhashn, rootstockTarget, submitRootstock))
+	if lastReceivedShareTimeNow - rskLastReceivedShareTime < 1000 and rskSubmittedShares < 3 and submitRootstock:
+		rskSubmittedShares += 1
+	else:
+		submitRootstock = False
+
 	submitBitcoin = blkhashn <= networkTarget
+	#checkShare.logger.info("ROOTSTOCK_DEBUG: BTCValidShare: {0} {1} {2}".format(blkhashn, networkTarget, submitBitcoin))
 
 	if submitBitcoin or submitRootstock:
 		if submitBitcoin:

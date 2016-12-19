@@ -109,7 +109,7 @@ class Rootstock(threading.Thread):
 		return access.mnr_getWork()
 
 	def _updateBlockHash(self, blockhash, notify, minerfees, target, parenthash):
-		if self.blockhash != blockhash:
+		if self.blockhash != blockhash or notify:
 			self.blockhash, self.notify, self.minerfees, self.target, self.parenthash = blockhash, notify, minerfees, target, parenthash
 			self.logger.info('New block hash {0} {1:X}'.format(b2a_hex(self.blockhash).decode('utf8'), target))
 			if (self._triggerRSKupdate(notify)):
