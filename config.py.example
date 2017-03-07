@@ -298,7 +298,7 @@ RootstockSources = (
 
 RootstockPollPeriod = 0.5
 
-RootstockNotifyPolicy = 1
+RootstockNotifyPolicy = 2
 
 # Use in development mode only
 DEV_MODE_ON = False
