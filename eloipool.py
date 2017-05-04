@@ -601,7 +601,7 @@ def checkShare(share):
 		rskLastReceivedShareTime = lastReceivedShareTimeNow
 
 	checkShare.logger.info("ROOTSTOCK_DEBUG: RSKValidShare: {0} {1} {2}".format(blkhashn, rootstockTarget, submitRootstock))
-	if lastReceivedShareTimeNow - rskLastReceivedShareTime < 1000 and rskSubmittedShares < 3 and submitRootstock:
+	if lastReceivedShareTimeNow - rskLastReceivedShareTime < 1000 and rskSubmittedShares < 1 and submitRootstock:
 		rskSubmittedShares += 1
 	else:
 		submitRootstock = False
