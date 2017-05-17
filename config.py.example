@@ -296,7 +296,7 @@ RootstockSources = (
 	},
 )
 
-RootstockPollPeriod = 0.5
+RootstockPollPeriod = 2
 
 RootstockNotifyPolicy = 2
 
