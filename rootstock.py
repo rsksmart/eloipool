@@ -105,7 +105,7 @@ class Rootstock(threading.Thread):
 		return None
 
 	def _callGetWorkFrom(self, RS):
-		access = jsonrpc.ServiceProxy(RS['uri'], timeout = 5)
+		access = jsonrpc.ServiceProxy(RS['uri'], timeout = 3)
 		return access.mnr_getWork()
 
 	def _updateBlockHash(self, blockhash, notify, minerfees, target, parenthash):
@@ -146,7 +146,7 @@ def rootstockSubmissionThread(payload, blkhash, share):
 		RS = servers.pop(0)
 		#Don't reuse the same conection object that getWork since submitBitcoinBlock can take some time to complete
 		#UpstreamRskdJSONRPC = RS['access']
-		UpstreamRskdJSONRPC = jsonrpc.ServiceProxy(RS['uri'])
+		UpstreamRskdJSONRPC = jsonrpc.ServiceProxy(RS['uri'], timeout = 3)
 		try:
 			start_time = datetime.now()
 			UpstreamRskdJSONRPC.mnr_submitBitcoinBlock(payload)
