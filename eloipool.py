@@ -1071,7 +1071,7 @@ if __name__ == "__main__":
 
 	configLogger = logging.getLogger("ConfigLogger")
 	configFile = open("config.py", "r")
-	configLogger.info("ROOTSTOCK: version 1.0.1")
+	configLogger.info("ROOTSTOCK: version 1.1.0")
 	configLogger.info("ROOTSTOCK: config.py_log_start \n" + configFile.read())
 	configFile.close()
 	configLogger.info("ROOTSTOCK: config.py_log_complete")
