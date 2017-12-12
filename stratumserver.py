@@ -275,6 +275,7 @@ class StratumServer(networkserver.AsyncSocketServer):
 		self._JobId = 0
 		self.JobId = '%d' % (time(),)
 		self.WakeRequest = None
+		self.WorkUpdateInterval = 55
 		self.UpdateTask = None
 		self._PendingQuickUpdates = set()
 	
@@ -318,9 +319,9 @@ class StratumServer(networkserver.AsyncSocketServer):
 				b2a_hex(txn.data[:pos - len(self.extranonce1null) - 4]).decode('ascii'),
 				b2a_hex(txn.data[pos:]).decode('ascii'),
 				steps,
-				self.BlockVersionHex,
+				'%08x' % (merkleTree.MP['version'],),
 				b2a_hex(bits[::-1]).decode('ascii'),
-				b2a_hex(struct.pack('>L',tim)).decode('ascii'),
+				b2a_hex(struct.pack('>L', int(time()))).decode('ascii'),
 				forceClean or not self.IsJobValid(self.JobId)
 			],
 		}).encode('ascii') + b"\n"
@@ -342,7 +343,7 @@ class StratumServer(networkserver.AsyncSocketServer):
 			self.WakeRequest = 2
 		self.wakeup()
 
-		self.UpdateTask = self.schedule((lambda: self.updateJob(rskLog=False)), time() + 55)
+		self.UpdateTask = self.schedule((lambda: self.updateJob(rskLog=False)), time() + self.WorkUpdateInterval)
 	
 	def doQuickUpdate(self):
 		PQU = self._PendingQuickUpdates
