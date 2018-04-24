@@ -134,10 +134,9 @@ class Rootstock(threading.Thread):
 	def getRSKTag(self):
 		return b'\x52\x53\x4B\x42\x4C\x4F\x43\x4B\x3A'
 
-def rootstockSubmissionThread(payload, blkhash, share):
+def rootstockSubmissionThread(blkhash, blkheaderhex, coinbasehex, merklehasheshex, txcounthex, share):
 	servers = list(a for b in rootstockSubmissionThread.rootstock.RootstockSources for a in b)
 
-	payload = b2a_hex(payload).decode('ascii')
 	tries = 0
 	start_time = None
 	finish_time = None
@@ -149,7 +148,7 @@ def rootstockSubmissionThread(payload, blkhash, share):
 		UpstreamRskdJSONRPC = jsonrpc.ServiceProxy(RS['uri'], timeout = 3)
 		try:
 			start_time = datetime.now()
-			UpstreamRskdJSONRPC.mnr_submitBitcoinBlock(payload)
+			UpstreamRskdJSONRPC.mnr_submitBitcoinBlockPartialMerkle(blkhash, blkheaderhex, coinbasehex, merklehasheshex, txcounthex)
 			finish_time = datetime.now()
 			rootstock.updateRootstock(True)
 		except BaseException as gbterr:

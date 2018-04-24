@@ -649,7 +649,18 @@ def checkShare(share):
 
 		if submitRootstock:
 			share['RSK_SOLUTION'] = True
-			threading.Thread(target=rootstockSubmissionThread, args=(payload, blkhash, share)).start()
+
+			blockhashhex = b2a_hex(blkhash).decode('ascii')
+			blkheaderhex = b2a_hex(share['data']).decode('ascii')
+			coinbasehex = b2a_hex(cbtxn.data).decode('ascii')
+			
+			coinbasehashhex = b2a_hex(cbtxn.txid).decode('ascii')
+			merklehashes = [ b2a_hex(x).decode('ascii') for x in workMerkleTree._steps]
+			merklehashes.insert(0, coinbasehashhex)
+			merklehasheshex = ' '.join(merklehashes)
+
+			txcounthex = hex(len(txlist))[2:]
+			threading.Thread(target=rootstockSubmissionThread, args=(blockhashhex, blkheaderhex, coinbasehex, merklehasheshex, txcounthex, share)).start()
 
 		if not submitBitcoin:
 			return

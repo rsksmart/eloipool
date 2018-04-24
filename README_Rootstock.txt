@@ -202,7 +202,7 @@ Execution
 
 Calling it without arguments will display a usage text
 
-> ./logparser.py
+> python3 logparser.py
 
 usage: logparser.py [-h] [-o OUTPUT] [-s] logFile                  
 logparser.py: error: the following arguments are required: logFile 
@@ -210,16 +210,15 @@ logparser.py: error: the following arguments are required: logFile
 With -o OUTPUT will extract the logged actions from the log file and will
 write it to in CSV format to the file specified.
 
-> ./logparser.py logs/ckpool.log -o actions.csv
+> python3 logparser.py ../eloipool.log -o actions.csv
 
 The fields logged are: action name, start time, duration, id
 
-> ./logparser.py logs/ckpool.log -s
+> python3 logparser.py ckpool.log -s -o actions.csv > summary.csv
 
 With the -s flag will display a summary of the high level operations
 
 The fields logged are: action name, start time, duration, jobid, clients, notification duration
-
 
 Output example
 --------------
