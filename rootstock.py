@@ -123,7 +123,7 @@ class Rootstock(threading.Thread):
 		notifyFlagUpdate = (self.RootstockNotifyPolicy == 1 or self.RootstockNotifyPolicy == 3) and notify
 		differentBlockHashUpdate = (self.RootstockNotifyPolicy == 2 or self.RootstockNotifyPolicy == 4) and self.parenthash != self.lastparenthash
 
-		return notifyFlagUpdate or differentBlockHashUpdate;
+		return notifyFlagUpdate or differentBlockHashUpdate
 
 	def getBlockInfo(self):
 		blockhash, target = self.blockhash, self.target
