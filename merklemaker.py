@@ -118,7 +118,8 @@ class merkleMaker(threading.Thread):
 		self.SubsidyAlgo = lambda height: 5000000000 >> (height // 210000)
 		self.WitnessNonce = b'\0' * 0x20
 		self.ForceWitnessCommitment = False
-	
+		self.merkleTreeLock = threading.Lock()
+
 	def _prepare(self):
 		self.UseTemplateChecks = True
 		if getattr(self, 'TemplateChecks', True) is None:
@@ -196,7 +197,19 @@ class merkleMaker(threading.Thread):
 		
 		self.lastMerkleUpdate = 0
 		self.nextMerkleUpdate = 0
-	
+
+	def getCurrentMerkleTree(self):
+		currentMerkleTreeResult = None
+		self.merkleTreeLock.acquire()
+		currentMerkleTreeResult = self.currentMerkleTree
+		self.merkleTreeLock.release()
+		return currentMerkleTreeResult
+
+	def setCurrentMerkleTree(self, newMerkleTree):
+		self.merkleTreeLock.acquire()
+		self.currentMerkleTree = newMerkleTree
+		self.merkleTreeLock.release()
+
 	def UpdateClearMerkleTree(self, MT, MP):
 		nMP = {}
 		for copy_mp in ('version', '_BlockVersionBytes', 'rules', '_filtered_vbavailable'):
@@ -212,8 +225,10 @@ class merkleMaker(threading.Thread):
 		cbtxn.setCoinbase(b'\0\0')  # necessary to avoid triggering segwit marker+flags
 		cbtxn.assemble()
 		MT = MerkleTree([cbtxn])
+		self.merkleTreeLock.acquire()
 		if self.currentMerkleTree:
 			self.UpdateClearMerkleTree(MT, self.currentMerkleTree.MP)
+		self.merkleTreeLock.release()
 		MT.witness_commitment = None
 		if blockInfo[0] is not None:
 			MT.rootstockBlockInfo = blockInfo
@@ -280,7 +295,7 @@ class merkleMaker(threading.Thread):
 			self.nextMerkleRoots = Queue(self._MaxClearSize)
 		else:
 			self.logger.debug('Already using clear merkleroots for this height')
-		self.currentMerkleTree = self.curClearMerkleTree
+		self.setCurrentMerkleTree(self.curClearMerkleTree)
 		self.merkleRoots.clear()
 		
 		if not self.ready:
@@ -657,7 +672,7 @@ class merkleMaker(threading.Thread):
 		blkbasics = (MP['_prevBlock'], MP['height'], MP['_bits'])
 		if blkbasics != self.currentBlock:
 			self.updateBlock(*blkbasics, _HBH=(MP['previousblockhash'], MP['bits']))
-		self.currentMerkleTree = BestMT
+		self.setCurrentMerkleTree(BestMT)
 		FirstTemplate = not hasattr(self.curClearMerkleTree, 'MP')
 		self.UpdateClearMerkleTree(self.curClearMerkleTree, MP)
 		self.UpdateClearMerkleTree(self.nextMerkleTree, MP)
@@ -763,7 +778,7 @@ class merkleMaker(threading.Thread):
 	
 	def makeRegular(self):
 		self._doing('regular merkle roots')
-		self._makeOne(self.merkleRoots.append, self.currentMerkleTree, height=self.currentBlock[1])
+		self._makeOne(self.merkleRoots.append, self.getCurrentMerkleTree(), height=self.currentBlock[1])
 	
 	def merkleMaker_II(self):
 		global now
@@ -789,7 +804,7 @@ class merkleMaker(threading.Thread):
 			return self.makeClear()
 		if self.nextMerkleRoots.qsize() < self.WorkQueueSizeLongpoll[1]:
 			return self.makeNext()
-		if len(self.merkleRoots) < self.WorkQueueSizeRegular[1] or self.merkleRoots[0][1] != self.currentMerkleTree:
+		if len(self.merkleRoots) < self.WorkQueueSizeRegular[1] or self.merkleRoots[0][1] != self.getCurrentMerkleTree():
 			return self.makeRegular()
 		
 		# Nothing left to do, fire onBlockUpdate event (if appropriate) and sleep
@@ -846,7 +861,7 @@ class merkleMaker(threading.Thread):
 				while not self.ready:
 					self.readyCV.wait()
 		(prevBlock, height, bits) = self.currentBlock
-		mt = self.curClearMerkleTree if wantClear else deepcopy(self.currentMerkleTree)
+		mt = self.curClearMerkleTree if wantClear else deepcopy(self.getCurrentMerkleTree())
 		cb = self.makeCoinbase(height=height)
 		rollPrevBlk = (mt == self.curClearMerkleTree)
 		mt.start_time, mt.finish_time = self.start_time, self.finish_time
@@ -859,9 +874,11 @@ class merkleMaker(threading.Thread):
 		self.logGbtCall = logGbtCall
 
 	def updateRSKBlockHashOnCoinbaseTxn(self, blockhash):
+		self.merkleTreeLock.acquire()
 		if self.currentMerkleTree is not None:
 			self.currentMerkleTree.data[0].outputs = self.currentMerkleTree.data[0].outputs[:-1]
 			self.currentMerkleTree.data[0].addOutput(0, self.Rootstock.getRSKTag() + blockhash)
+		self.merkleTreeLock.release()
 
 # merkleMaker tests
 def _test():
