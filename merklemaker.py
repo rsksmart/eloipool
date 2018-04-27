@@ -876,9 +876,21 @@ class merkleMaker(threading.Thread):
 	def updateRSKBlockHashOnCoinbaseTxn(self, blockhash):
 		self.merkleTreeLock.acquire()
 		if self.currentMerkleTree is not None:
-			self.currentMerkleTree.data[0].outputs = self.currentMerkleTree.data[0].outputs[:-1]
-			self.currentMerkleTree.data[0].addOutput(0, self.Rootstock.getRSKTag() + blockhash)
+			coinbaseTxn = self.currentMerkleTree.data[0]
+			rskBlockHashOutput = self.getRSKBlockHashOutputIndex(coinbaseTxn)
+			if rskBlockHashOutput is not None:
+				coinbaseTxn.outputs.pop(rskBlockHashOutput)
+			coinbaseTxn.addOutput(0, self.Rootstock.getRSKTag() + blockhash)
 		self.merkleTreeLock.release()
+
+	def getRSKBlockHashOutputIndex(self, coinbaseTxn):
+		rskBlockHashOutput = None
+		for i in range(0, len(coinbaseTxn.outputs)):
+			(amount, pkScript) = coinbaseTxn.outputs[i]
+			if self.Rootstock.getRSKTag() in pkScript:
+				rskBlockHashOutput = i
+				break
+		return rskBlockHashOutput
 
 # merkleMaker tests
 def _test():
