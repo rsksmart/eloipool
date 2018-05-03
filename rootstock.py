@@ -134,7 +134,7 @@ class Rootstock(threading.Thread):
 	def getRSKTag(self):
 		return b'\x52\x53\x4B\x42\x4C\x4F\x43\x4B\x3A'
 
-def rootstockSubmissionThread(blkhash, blkheaderhex, coinbasehex, merklehasheshex, txcounthex, share):
+def rootstockSubmissionThread(blkHash, blkHeader, coinbase, merkleHashes, txnCount, share):
 	servers = list(a for b in rootstockSubmissionThread.rootstock.RootstockSources for a in b)
 
 	tries = 0
@@ -143,12 +143,13 @@ def rootstockSubmissionThread(blkhash, blkheaderhex, coinbasehex, merklehasheshe
 	while len(servers):
 		tries += 1
 		RS = servers.pop(0)
-		#Don't reuse the same conection object that getWork since submitBitcoinBlock can take some time to complete
+		# Don't reuse the same connection object that getWork since we want the solution to be submitted asap
 		#UpstreamRskdJSONRPC = RS['access']
 		UpstreamRskdJSONRPC = jsonrpc.ServiceProxy(RS['uri'], timeout = 3)
 		try:
 			start_time = datetime.now()
-			UpstreamRskdJSONRPC.mnr_submitBitcoinBlockPartialMerkle(blkhash, blkheaderhex, coinbasehex, merklehasheshex, txcounthex)
+			# All parameters submitted to mnr_submitBitcoinBlockPartialMerkle must be hex formated
+			UpstreamRskdJSONRPC.mnr_submitBitcoinBlockPartialMerkle(blkHash, blkHeader, coinbase, merkleHashes, txnCount)
 			finish_time = datetime.now()
 			rootstock.updateRootstock(True)
 		except BaseException as gbterr:
