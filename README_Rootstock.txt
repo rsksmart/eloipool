@@ -154,7 +154,7 @@ RootstockSources = (
 
 Time in seconds betweeen request to Rskd server
 
-RootstockPollPeriod = 20.0
+RootstockPollPeriod = 2.0
 
 * RootstockNotifyPolicy
 
