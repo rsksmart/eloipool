@@ -491,9 +491,12 @@ def checkData(share, wld):
 	if data[0:4] != MT.MP['_BlockVersionBytes']:
 		raise RejectedShare('bad-version')
 
-def buildStratumData(share, merkleroot, versionbytes):
-	(prevBlock, height, bits) = MM.currentBlock
-	
+def buildStratumData(share, merkleroot, versionbytes, blockToUse=None):
+	if blockToUse != None:
+		(prevBlock, height, bits) = blockToUse
+	else:
+		(prevBlock, height, bits) = MM.currentBlock
+
 	data = versionbytes
 	data += prevBlock
 	data += merkleroot
@@ -585,9 +588,29 @@ def checkShare(share):
 	DupeShareHACK[data] = None
 	
 	blkhash = dblsha(data)
+
 	if not hasattr(config, 'DEV_MODE_ON') or not config.DEV_MODE_ON:
-		if blkhash[28:] != b'\0\0\0\0':
-			raise RejectedShare('H-not-zero')
+		if not _reachAtLeastLowDifficulty(blkhash):
+		
+			if len(share[mode])>= 4:
+				# currentblock may be changed, so we retry looking up some previous block saved (in RKS could be usefull prev block).
+				blockToUse =  (share[mode][3], share[mode][0], share[mode][4])
+				retryData = buildStratumData(share, workMerkleTree.withFirst(cbtxn), workMerkleTree.MP['_BlockVersionBytes'], blockToUse)
+				
+				shareMerkleRoot = retryData[36:68]
+				
+				blkhash = dblsha(retryData)
+
+				# data in 'MC' could be the same that was in data so we check again previous conditions
+				if retryData == data or not _reachAtLeastLowDifficulty(blkhash):
+					raise RejectedShare('H-not-zero')
+				
+				data = retryData
+				DupeShareHACK[data] = None
+				
+			else:
+				raise RejectedShare('H-not-zero')
+
 	blkhashn = LEhash2int(blkhash)
 	
 	global networkTarget
@@ -803,6 +826,9 @@ def newBlockNotificationSIGNAL(signum, frame):
 	thr = threading.Thread(target=newBlockNotification, name='newBlockNotification via signal %s' % (signum,))
 	thr.daemon = True
 	thr.start()
+
+def _reachAtLeastLowDifficulty(blkhash):
+	return blkhash[28:] == b'\0\0\0\0'
 
 from signal import signal, SIGUSR1
 signal(SIGUSR1, newBlockNotificationSIGNAL)
