@@ -593,7 +593,7 @@ def checkShare(share):
 		if not _reachAtLeastLowDifficulty(blkhash):
 		
 			if len(share[mode])>= 4:
-				# currentblock may be changed, so we retry looking up some previous block saved (in RKS could be usefull prev block).
+				# currentblock may be changed, so we retry looking up some previous block saved (in RKS could be usefull prev blocks).
 				blockToUse =  (share[mode][3], share[mode][0], share[mode][4])
 				retryData = buildStratumData(share, workMerkleTree.withFirst(cbtxn), workMerkleTree.MP['_BlockVersionBytes'], blockToUse)
 				
@@ -601,7 +601,7 @@ def checkShare(share):
 				
 				blkhash = dblsha(retryData)
 
-				# data in 'MC' could be the same that was in data so we check again previous conditions
+				# retryData could be the same that was in data so we check again previous conditions
 				if retryData == data or not _reachAtLeastLowDifficulty(blkhash):
 					raise RejectedShare('H-not-zero')
 				
