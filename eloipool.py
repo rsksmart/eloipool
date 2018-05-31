@@ -650,17 +650,17 @@ def checkShare(share):
 		if submitRootstock:
 			share['RSK_SOLUTION'] = True
 
-			blockhash = b2a_hex(blkhash).decode('ascii')
-			blockheader = b2a_hex(share['data']).decode('ascii')
-			coinbase = b2a_hex(cbtxn.data).decode('ascii')
+			rsksubmit_blockhashHex = b2a_hex(blkhash).decode('ascii')
+			rsksubmit_blockheaderHex = b2a_hex(share['data']).decode('ascii')
+			rsksubmit_coinbaseHex = b2a_hex(cbtxn.data).decode('ascii')
 			
-			coinbaseHash = b2a_hex(cbtxn.txid).decode('ascii')
-			merkleHashes = [b2a_hex(x).decode('ascii') for x in workMerkleTree._steps]
-			merkleHashes.insert(0, coinbaseHash)
-			merkleHashes = ' '.join(merkleHashes)
+			coinbaseHashHex = b2a_hex(cbtxn.txid).decode('ascii')
+			rsksubmit_merkleHashes = [b2a_hex(x).decode('ascii') for x in workMerkleTree._steps]
+			rsksubmit_merkleHashes.insert(0, coinbaseHashHex)
+			rsksubmit_merkleHashes = ' '.join(rsksubmit_merkleHashes)
 
-			txnCount = hex(len(txlist))[2:]
-			threading.Thread(target=rootstockSubmissionThread, args=(blockhash, blockheader, coinbase, merkleHashes, txnCount, share)).start()
+			rsksubmit_txnCount = hex(len(txlist))[2:]
+			threading.Thread(target=rootstockSubmissionThread, args=(rsksubmit_blockhashHex, rsksubmit_blockheaderHex, rsksubmit_coinbaseHex, rsksubmit_merkleHashes, rsksubmit_txnCount, share)).start()
 
 		if not submitBitcoin:
 			return
