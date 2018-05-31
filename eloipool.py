@@ -590,7 +590,7 @@ def checkShare(share):
 	blkhash = dblsha(data)
 
 	if not hasattr(config, 'DEV_MODE_ON') or not config.DEV_MODE_ON:
-		if not _reachAtLeastLowDifficulty(blkhash):
+		if not _reachesLowestDifficulty(blkhash):
 		
 			if len(share[mode])>= 4:
 				# currentblock may be changed, so we retry looking up some previous block saved (in RKS could be usefull prev blocks).
@@ -601,8 +601,8 @@ def checkShare(share):
 				
 				blkhash = dblsha(retryData)
 
-				# retryData could be the same that was in data so we check again previous conditions
-				if retryData == data or not _reachAtLeastLowDifficulty(blkhash):
+				# retryData could be equal than data so we check again previous conditions
+				if retryData == data or not _reachesLowestDifficulty(blkhash):
 					raise RejectedShare('H-not-zero')
 				
 				data = retryData
@@ -827,7 +827,7 @@ def newBlockNotificationSIGNAL(signum, frame):
 	thr.daemon = True
 	thr.start()
 
-def _reachAtLeastLowDifficulty(blkhash):
+def _reachesLowestDifficulty(blkhash):
 	return blkhash[28:] == b'\0\0\0\0'
 
 from signal import signal, SIGUSR1
