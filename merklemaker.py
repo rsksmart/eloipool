@@ -488,14 +488,16 @@ class merkleMaker(threading.Thread):
 			if 'txid' in iinfo:
 				ka['txid'] = bytes.fromhex(iinfo['txid'])[::-1]
 			txnobjs.append(Txn(data=txnlist[i], **ka))
-		
-		witness_commitment = CalculateWitnessCommitment(txnobjs, self.WitnessNonce, force=self.ForceWitnessCommitment)
-		
+
+		witnessCommitment = None
+		if 'default_witness_commitment' in MP:
+			witnessCommitment = CalculateWitnessCommitment(txnobjs, self.WitnessNonce, force=self.ForceWitnessCommitment)
+
 		blockInfo = (None, None)
 		if hasattr(self, 'Rootstock') and self.Rootstock is not None:
 			blockInfo = self.Rootstock.getBlockInfo()
 		
-		cbtxn = self.makeCoinbaseTxn(MP['coinbasevalue'], prevBlockHex = MP['previousblockhash'], witness_commitment=witness_commitment, rsk_blockhash = blockInfo[0])
+		cbtxn = self.makeCoinbaseTxn(MP['coinbasevalue'], prevBlockHex = MP['previousblockhash'], witness_commitment=witnessCommitment, rsk_blockhash = blockInfo[0])
 		cbtxn.setCoinbase(b'\0\0')
 		cbtxn.assemble()
 		txnobjs[0] = cbtxn
@@ -505,7 +507,7 @@ class merkleMaker(threading.Thread):
 		newMerkleTree.POTInfo = MP.get('POTInfo')
 		newMerkleTree.MP = MP
 		newMerkleTree.oMP = oMP
-		newMerkleTree.witness_commitment = witness_commitment
+		newMerkleTree.witness_commitment = witnessCommitment
 
 		if blockInfo[0] is not None:
 			newMerkleTree.rootstockBlockInfo = blockInfo
