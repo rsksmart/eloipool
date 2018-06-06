@@ -87,7 +87,8 @@ class _getblocktemplate:
 		t = deepcopy(merkleTree.data[0])
 		t.setCoinbase(cb)
 		if not merkleTree.witness_commitment is None:
-			witnessCommitmentOutput = self.getWitnessCommitmentOutputIndex(t, merkleTree)
+			witnessOutput = (0, BitcoinScript.commitment(WitnessMagic + merkleTree.witness_commitment))
+			witnessCommitmentOutput = t.outputs.index(witnessOutput) if (witnessOutput in t.outputs) else None
 			assert witnessCommitmentOutput is not None
 			t.outputs.pop(witnessCommitmentOutput)
 		t.assemble()
@@ -101,14 +102,6 @@ class _getblocktemplate:
 		rv['vbrequired'] = rv['version'] & 0x1fffffff
 		
 		return rv
-
-	def getWitnessCommitmentOutputIndex(self, coinbaseTxn, merkleTree):
-		witnessCommitmentOutput = None
-		for i in range(0, len(coinbaseTxn.outputs)):
-			if coinbaseTxn.outputs[i] == (0, BitcoinScript.commitment(WitnessMagic + merkleTree.witness_commitment)):
-				witnessCommitmentOutput = i
-				break
-		return witnessCommitmentOutput
 
 	def doJSON_submitblock(self, data, params = _NoParams):
 		data = bytes.fromhex(data)
