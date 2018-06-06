@@ -61,7 +61,10 @@ IdleSleepTime = 0.1
 
 ### Settings relating to reward generation
 
-# Address to generate rewards to
+# Address to generate rewards to: 
+# Only BCH legacy address format accepted. If an address in CashAddr
+# format wants to be used it must be converted to legacy format
+
 TrackerAddr = 'mrsP7M31efGkQHXb7nRiWLDjfV2M8oakf2'  # testnet
 
 # Coinbaser command to control reward delegation
