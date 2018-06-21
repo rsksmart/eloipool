@@ -885,8 +885,15 @@ class merkleMaker(threading.Thread):
 			coinbaseTxn.addOutput(0, self.Rootstock.getRSKTag() + blockhash)
 		self.merkleTreeLock.release()
 
-	def getRSKBlockHashOutputIndex(self, coinbaseTxn):
+	def getRSKBlockHashOutputIndex(self, coinbaseTxn = None):
 		rskBlockHashOutput = None
+
+		if coinbaseTxn == None and self.currentMerkleTree is not None:
+			coinbaseTxn = self.currentMerkleTree.data[0]
+		
+		if coinbaseTxn == None:
+			return None
+
 		for i in range(0, len(coinbaseTxn.outputs)):
 			(amount, pkScript) = coinbaseTxn.outputs[i]
 			if self.Rootstock.getRSKTag() in pkScript:

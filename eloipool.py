@@ -670,20 +670,27 @@ def checkShare(share):
 			else:
 				payload += assembleBlock(data, txlist)[80:]
 
-		if submitRootstock:
-			share['RSK_SOLUTION'] = True
 
-			blockhashHexRskSubmit = b2a_hex(blkhash).decode('ascii')
-			blockheaderHexRskSubmit = b2a_hex(share['data']).decode('ascii')
-			coinbaseHexRskSubmit = b2a_hex(cbtxn.data).decode('ascii')
-			
-			coinbaseHashHexRskSubmit = b2a_hex(cbtxn.txid).decode('ascii')
-			merkleHashesRskSubmit = [b2a_hex(x).decode('ascii') for x in workMerkleTree._steps]
-			merkleHashesRskSubmit.insert(0, coinbaseHashHexRskSubmit)
-			merkleHashesRskSubmit = ' '.join(merkleHashesRskSubmit)
+		rskTagIsMissing =  MM.getRSKBlockHashOutputIndex(workMerkleTree.data[0]) is None
 
-			txnCountRskSubmit = hex(len(txlist))[2:]
-			threading.Thread(target=rootstockSubmissionThread, args=(blockhashHexRskSubmit, blockheaderHexRskSubmit, coinbaseHexRskSubmit, merkleHashesRskSubmit, txnCountRskSubmit, share)).start()
+		if not rskTagIsMissing:
+			if submitRootstock:
+				share['RSK_SOLUTION'] = True
+
+				blockhashHexRskSubmit = b2a_hex(blkhash).decode('ascii')
+				blockheaderHexRskSubmit = b2a_hex(share['data']).decode('ascii')
+				coinbaseHexRskSubmit = b2a_hex(cbtxn.data).decode('ascii')
+				
+				coinbaseHashHexRskSubmit = b2a_hex(cbtxn.txid).decode('ascii')
+				merkleHashesRskSubmit = [b2a_hex(x).decode('ascii') for x in workMerkleTree._steps]
+				merkleHashesRskSubmit.insert(0, coinbaseHashHexRskSubmit)
+				merkleHashesRskSubmit = ' '.join(merkleHashesRskSubmit)
+
+				txnCountRskSubmit = hex(len(txlist))[2:]
+				logfunc('blockhashHexRskSubmit %s , coinbaseHex %s' % (blockhashHexRskSubmit,coinbaseHexRskSubmit))
+				threading.Thread(target=rootstockSubmissionThread, args=(blockhashHexRskSubmit, blockheaderHexRskSubmit, coinbaseHexRskSubmit, merkleHashesRskSubmit, txnCountRskSubmit, share)).start()
+		else:
+				checkShare.logger.info('ROOTSTOCK: RSKTAG missing in output coinbase')
 
 		if not submitBitcoin:
 			return
