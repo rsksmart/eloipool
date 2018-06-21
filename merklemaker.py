@@ -887,9 +887,10 @@ class merkleMaker(threading.Thread):
 
 	def getRSKBlockHashOutputIndex(self, coinbaseTxn = None):
 		rskBlockHashOutput = None
+		merkleTree = self.getCurrentMerkleTree()
 
-		if coinbaseTxn == None and self.currentMerkleTree is not None:
-			coinbaseTxn = self.currentMerkleTree.data[0]
+		if coinbaseTxn == None and merkleTree is not None:
+			coinbaseTxn = merkleTree.data[0]
 		
 		if coinbaseTxn == None:
 			return None
