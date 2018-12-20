@@ -472,8 +472,11 @@ def checkData(share, wld):
 	if data[0:4] != MT.MP['_BlockVersionBytes']:
 		raise RejectedShare('bad-version')
 
-def buildStratumData(share, merkleroot, versionbytes):
-	(prevBlock, height, bits) = MM.currentBlock
+def buildStratumData(share, merkleroot, versionbytes, blockToUse=None):
+	if blockToUse is not None:
+		(prevBlock, height, bits) = blockToUse
+	else:
+		(prevBlock, height, bits) = MM.currentBlock
 	
 	data = versionbytes
 	data += prevBlock
@@ -561,8 +564,28 @@ def checkShare(share):
 	
 	blkhash = dblsha(data)
 	if not hasattr(config, 'DEV_MODE_ON') or not config.DEV_MODE_ON:
-		if blkhash[28:] != b'\0\0\0\0':
-			raise RejectedShare('H-not-zero')
+		if not _reachesLowestDifficulty(blkhash):
+			if len(share[mode]) >= 4:
+				# currentblock might have been changed because of a new work received from bitcoind.
+				# At the same exact time, a valid share for old work can be received so look up for the previous
+				# currentblock. This allows to submit the valid share instead of discard it.
+				blockToUse = (share[mode][3], share[mode][0], share[mode][4])
+				retryData = buildStratumData(share, workMerkleTree.withFirst(cbtxn),
+											 workMerkleTree.MP['_BlockVersionBytes'], blockToUse)
+
+				shareMerkleRoot = retryData[36:68]
+
+				blkhash = dblsha(retryData)
+
+				# retryData could be equal to data so we check again previous conditions
+				if retryData == data or not _reachesLowestDifficulty(blkhash):
+					raise RejectedShare('H-not-zero')
+
+				data = retryData
+				DupeShareHACK[data] = None
+			else:
+				raise RejectedShare('H-not-zero')
+
 	blkhashn = LEhash2int(blkhash)
 	
 	global networkTarget
@@ -725,6 +748,10 @@ def newBlockNotificationSIGNAL(signum, frame):
 	thr = threading.Thread(target=newBlockNotification, name='newBlockNotification via signal %s' % (signum,))
 	thr.daemon = True
 	thr.start()
+
+
+def _reachesLowestDifficulty(blkhash):
+	return blkhash[28:] == b'\0\0\0\0'
 
 from signal import signal, SIGUSR1
 signal(SIGUSR1, newBlockNotificationSIGNAL)
