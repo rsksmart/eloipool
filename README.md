@@ -1,7 +1,7 @@
 # Eloipool with RSK Merged Mining Capabilities
 
 This repository is based on [Eloipool original](https://github.com/luke-jr/eloipool) repository  and has all the neccessary changes to allow the pool to do merged mining with RSK.
-Said changes can be found in the master branch, which is periodically updated with changes from CKPool original.
+Said changes can be found in the master branch, which is periodically updated with changes from Eloipool original.
 
 If you need more information about Eloipool original, please refer to its [README](https://github.com/rsksmart/eloipool/blob/master/README_original)
 
